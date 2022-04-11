@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="WHY我们通过一系列的yaml来Config application deployed on Kubernetes.  我们的每个application往往需要一组K8s resource, 即一组yaml files. 问题, 对于Kubernetes:    我们如何高效管理不同application的manifest: “分治法”, 不同application不同的folder, 之">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Config management using Kustomize">
+<meta property="og:url" content="https://elitegoblin.github.io/2021/05/24/Config-management-using-Kustomize/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="WHY我们通过一系列的yaml来Config application deployed on Kubernetes.  我们的每个application往往需要一组K8s resource, 即一组yaml files. 问题, 对于Kubernetes:    我们如何高效管理不同application的manifest: “分治法”, 不同application不同的folder, 之">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210525113423.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210525104303.png">
+<meta property="article:published_time" content="2021-05-24T14:36:30.000Z">
+<meta property="article:modified_time" content="2021-05-25T01:34:32.194Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="Kubernetes">
+<meta property="article:tag" content="Kustomize">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210525113423.png">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2021/05/24/Config-management-using-Kustomize/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2021&#x2F;05&#x2F;24&#x2F;Config-management-using-Kustomize&#x2F;&quot;,&quot;path&quot;:&quot;2021&#x2F;05&#x2F;24&#x2F;Config-management-using-Kustomize&#x2F;&quot;,&quot;title&quot;:&quot;Config management using Kustomize&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Config management using Kustomize | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#WHY"><span class="nav-number">1.</span> <span class="nav-text">WHY</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Config%E7%BB%84%E7%BB%87%E7%BB%93%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">Config组织结构:</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Kustomize-feature"><span class="nav-number">3.</span> <span class="nav-text">Kustomize feature</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Hello-world"><span class="nav-number">4.</span> <span class="nav-text">Hello world</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Base%E2%80%99s-Kustomization"><span class="nav-number">4.1.</span> <span class="nav-text">Base’s Kustomization</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Overlays-intro"><span class="nav-number">4.2.</span> <span class="nav-text">Overlays intro</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Diff"><span class="nav-number">4.3.</span> <span class="nav-text">Diff</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Patches%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">Patches总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#JSON-patch"><span class="nav-number">5.1.</span> <span class="nav-text">JSON patch</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-number">6.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2021/05/24/Config-management-using-Kustomize/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Config management using Kustomize
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-05-24 22:36:30" itemprop="dateCreated datePublished" datetime="2021-05-24T22:36:30+08:00">2021-05-24</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-25 09:34:32" itemprop="dateModified" datetime="2021-05-25T09:34:32+08:00">2021-05-25</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <img src="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210525113423.png" alt="20210525113423" style="width:500px"/>  
+
+<h2 id="WHY"><a href="#WHY" class="headerlink" title="WHY"></a>WHY</h2><p>我们通过一系列的yaml来Config application deployed on Kubernetes. </p>
+<p>我们的每个application往往需要一组K8s resource, 即一组<code>yaml</code> files.</p>
+<p>问题, 对于Kubernetes: </p>
+<ul>
+<li> 我们如何高效管理不同application的manifest: “分治法”, 不同application不同的folder, 之下是其group of manifest.</li>
+<li> 不同环境的manifest, 大体相似，细微config差异，如何reuse manifest, 但区别不同的环境?</li>
+</ul>
+<span id="more"></span>
+
+<p>在Kustomize之前，已经有很多tool来管理不同环境的manifest, 可以看出对其的需求之强, 参见<a target="_blank" rel="noopener" href="https://github.com/kubernetes/community/blob/master/contributors/design-proposals/architecture/declarative-application-management.md">Config management design doc</a></p>
+<p>在Kustomize之前，我们组用<a target="_blank" rel="noopener" href="https://github.com/jimmycuadra/ktmpl">ktmpl</a>来apply manifest到不同环境; 机制是<code> Parameterization Templates</code>: 所有的环境共享一致的template, template含有不同的parameters, 不同环境定制这些parameters.</p>
+<p>Kustomize是Kunernetes官方的config management tool, 解决第二个问题. 机制是对将可复用的manifest定义在base文件中，不同环境对其做<code>patch</code>: 即base file + patch(in different env)组成最终apply的manifest.</p>
+<h2 id="Config组织结构"><a href="#Config组织结构" class="headerlink" title="Config组织结构:"></a>Config组织结构:</h2><ul>
+<li> <code>base</code>存放common manifest</li>
+<li> <code>overlays</code>存放不同环境的patches</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">├── base</span><br><span class="line">│   ├── configMap.yaml</span><br><span class="line">│   ├── deployment.yaml</span><br><span class="line">│   ├── kustomization.yaml</span><br><span class="line">│   └── service.yaml</span><br><span class="line">└── overlays</span><br><span class="line">    ├── production</span><br><span class="line">    │   ├── deployment.yaml</span><br><span class="line">    │   └── kustomization.yaml</span><br><span class="line">    └── staging</span><br><span class="line">        ├── kustomization.yaml</span><br><span class="line">        └── map.yaml</span><br></pre></td></tr></table></figure>
+
+<p>可以看出: </p>
+<ul>
+<li> <code>overlays</code>下每个folder代表一个环境: <code>staging</code>, <code>prod</code></li>
+<li> 每个folder下都有<code>kustomization.yaml</code>: 为Kustomize的配置文件.</li>
+</ul>
+<h2 id="Kustomize-feature"><a href="#Kustomize-feature" class="headerlink" title="Kustomize feature"></a>Kustomize feature</h2><p>通过file<code>kustomization.yaml</code>来配置:  </p>
+<ul>
+<li> Name prefix: 不同overlays给k8s resource以不同的name prefix</li>
+<li> Common label, annotation</li>
+<li> ConfigMap, secret generator: 生成ConfigMap, Secret, with hash suffix; 并自动reference.</li>
+<li> Diff of overlays: 以<code>diff</code>输出的形式，查看<code>overlays</code>对<code>base</code>的patch.</li>
+<li> Image tag: 配置image’s Tag</li>
+<li> Namespace: 配置resource的namespace</li>
+</ul>
+<h2 id="Hello-world"><a href="#Hello-world" class="headerlink" title="Hello world"></a>Hello world</h2><p>代码见<a target="_blank" rel="noopener" href="https://github.com/eliteGoblin/code_4_blog/tree/master/kustomize/helloworld">这里</a>, 示例来自<a target="_blank" rel="noopener" href="https://github.com/kubernetes-sigs/kustomize/tree/master/examples/helloWorld">Demo: hello world with variants</a></p>
+<p><code>helloword</code> folder存放demo app的manifest, <code>tree base</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">base</span><br><span class="line">├── configMap.yaml</span><br><span class="line">├── deployment.yaml</span><br><span class="line">├── kustomization.yaml</span><br><span class="line">└── service.yaml</span><br></pre></td></tr></table></figure>
+
+<p><code>kustomize build base</code>会将<code>base</code>下所有manifest混合在一起输出, 一般这么用: <code>kustomize build base | k apply -f -</code></p>
+<p>加入<code>staging</code>和<code>prod</code>的patches, in <code>overlays</code> folder, 变成: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">├── base</span><br><span class="line">│   ├── configMap.yaml</span><br><span class="line">│   ├── deployment.yaml</span><br><span class="line">│   ├── kustomization.yaml</span><br><span class="line">│   └── service.yaml</span><br><span class="line">└── overlays</span><br><span class="line">    ├── production</span><br><span class="line">    │   ├── deployment.yaml</span><br><span class="line">    │   └── kustomization.yaml</span><br><span class="line">    └── staging</span><br><span class="line">        ├── kustomization.yaml</span><br><span class="line">        └── map.yaml</span><br></pre></td></tr></table></figure>
+
+<h3 id="Base’s-Kustomization"><a href="#Base’s-Kustomization" class="headerlink" title="Base’s Kustomization"></a>Base’s Kustomization</h3><p><code>base/kustomization.yaml</code>config common labels for all resources: </p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">commonLabels:</span></span><br><span class="line">  <span class="attr">app:</span> <span class="string">hello</span></span><br></pre></td></tr></table></figure>
+
+<p>我们修改为<code>app: my-hello</code>, 验证是否所有<code>base</code>下resource都发生了改变: </p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sed -i.bak <span class="string">&#x27;s/app: hello/app: my-hello/&#x27;</span> \</span><br><span class="line">    base/kustomization.yaml</span><br></pre></td></tr></table></figure>
+
+<p>通过<code>kustomize build base</code>可以看到效果: </p>
+<img src="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210525104303.png" alt="20210525104303" style="width:500px"/>  
+
+<p><code>resources</code>列出<code>base</code>folder包含的resource. </p>
+<h3 id="Overlays-intro"><a href="#Overlays-intro" class="headerlink" title="Overlays intro"></a>Overlays intro</h3><p>以<code>staging</code>的kustomization.yaml为例: </p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">namePrefix:</span> <span class="string">staging-</span></span><br><span class="line"><span class="attr">commonLabels:</span></span><br><span class="line">  <span class="attr">variant:</span> <span class="string">staging</span></span><br><span class="line">  <span class="attr">org:</span> <span class="string">acmeCorporation</span></span><br><span class="line"><span class="attr">commonAnnotations:</span></span><br><span class="line">  <span class="attr">note:</span> <span class="string">Hello,</span> <span class="string">I</span> <span class="string">am</span> <span class="string">staging!</span></span><br><span class="line"><span class="attr">bases:</span></span><br><span class="line"><span class="bullet">-</span> <span class="string">../../base</span></span><br><span class="line"><span class="attr">patchesStrategicMerge:</span></span><br><span class="line"><span class="bullet">-</span> <span class="string">map.yaml</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li> <code>namePrefix</code>表明以<code>staging-</code>prefix各resource name</li>
+<li> <code>commonLabels</code>和<code>commonAnnotations</code>类似上述<code>base</code>的case</li>
+<li> <code>bases</code>: 指明base manifest</li>
+<li> <code>patchesStrategicMerge</code>: 以merge的形式update相应的resource: </li>
+</ul>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ConfigMap</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">the-map</span> <span class="comment"># (1)</span></span><br><span class="line"><span class="attr">data:</span></span><br><span class="line">  <span class="attr">altGreeting:</span> <span class="string">&quot;Have a pineapple!&quot;</span></span><br><span class="line">  <span class="attr">enableRisky:</span> <span class="string">&quot;true&quot;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li> <code>(1)</code>指明了update target, name必须match.</li>
+</ul>
+<h3 id="Diff"><a href="#Diff" class="headerlink" title="Diff"></a>Diff</h3><p>直接看下<code>staging</code>和<code>production</code>的不同(同理<code>base</code>与具体环境): </p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">diff \</span><br><span class="line">  &lt;(kustomize build overlays/staging) \</span><br><span class="line">  &lt;(kustomize build overlays/production) |\</span><br><span class="line">  more</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">3,4c3,4</span><br><span class="line">&lt;   altGreeting: Have a pineapple!</span><br><span class="line">&lt;   enableRisky: &quot;true&quot;</span><br><span class="line"><span class="comment">---</span></span><br><span class="line">&gt;   altGreeting: Good Morning!</span><br><span class="line">&gt;   enableRisky: &quot;false&quot;</span><br><span class="line">8c8</span><br><span class="line">&lt;     note: Hello, I am staging!</span><br><span class="line"><span class="comment">---</span></span><br><span class="line">&gt;     note: Hello, I am production!</span><br><span class="line">12,13c12,13</span><br><span class="line">&lt;     variant: staging</span><br><span class="line">&lt;   name: staging-the-map</span><br><span class="line"><span class="comment">---</span></span><br><span class="line">&gt;     variant: production</span><br><span class="line">&gt;   name: production-the-map</span><br><span class="line">...(truncate)</span><br></pre></td></tr></table></figure>
+
+<h2 id="Patches总结"><a href="#Patches总结" class="headerlink" title="Patches总结"></a>Patches总结</h2><p>Kustomize支持两种patch: </p>
+<ul>
+<li> <code>patchesStrategicMerge</code>: 给出<code>partial object</code>, 对原object做<code>Upsert</code>, <a target="_blank" rel="noopener" href="https://github.com/kubernetes/community/blob/master/contributors/devel/sig-api-machinery/strategic-merge-patch.md">design doc: Strategic Merge Patch</a>  </li>
+<li><code>JSON patch</code>: 根据<a target="_blank" rel="noopener" href="https://datatracker.ietf.org/doc/html/rfc6902">JSON patch 标准</a>, 对JSON object施加标准operations, 达到update的效果. 比merge更为imperative, operation有: <ul>
+<li> add</li>
+<li> remove</li>
+<li> replace</li>
+<li> move</li>
+<li> copy</li>
+</ul>
+</li>
+</ul>
+<h3 id="JSON-patch"><a href="#JSON-patch" class="headerlink" title="JSON patch"></a>JSON patch</h3><p>示例见<a target="_blank" rel="noopener" href="https://github.com/eliteGoblin/code_4_blog/tree/master/kustomize/json_patch">这里</a></p>
+<p><code>json_patch</code>为demo folder, 下面<code>kustomization.yaml</code>: </p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">resources:</span></span><br><span class="line"><span class="bullet">-</span> <span class="string">ingress.yaml</span></span><br><span class="line"><span class="attr">patches:</span></span><br><span class="line"><span class="bullet">-</span> <span class="attr">path:</span> <span class="string">ingress_patch.json</span></span><br><span class="line">  <span class="attr">target:</span></span><br><span class="line">    <span class="attr">group:</span> <span class="string">networking.k8s.io</span></span><br><span class="line">    <span class="attr">version:</span> <span class="string">v1beta1</span></span><br><span class="line">    <span class="attr">kind:</span> <span class="string">Ingress</span></span><br><span class="line">    <span class="attr">name:</span> <span class="string">my-ingress</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li> <code>resources</code>: 待patch的manifest</li>
+<li><code>patches</code>: JSON patch文件，格式也为JSON<ul>
+<li> <code>path</code>: file path</li>
+<li> <code>target</code>: 用来filter待update的resource, 可以一次<a target="_blank" rel="noopener" href="https://github.com/kubernetes-sigs/kustomize/blob/master/examples/patchMultipleObjects.md">patch多个resources</a>  </li>
+</ul>
+</li>
+</ul>
+<p>Verify patch diff: </p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">diff \                     </span><br><span class="line">  &lt;(cat json_patch/ingress.yaml) \</span><br><span class="line">  &lt;(kustomize build json_patch) |\       </span><br><span class="line">  more</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">7c7</span><br><span class="line">&lt;   - host: foo.bar.com</span><br><span class="line"><span class="comment">---</span></span><br><span class="line">&gt;   - host: foo.bar.io</span><br><span class="line">10,11c10</span><br><span class="line">&lt;       - path: /</span><br><span class="line">&lt;         backend:</span><br><span class="line"><span class="comment">---</span></span><br><span class="line">&gt;       - backend:</span><br><span class="line">13,15c12,17</span><br><span class="line">&lt;           servicePort: 8888</span><br><span class="line">&lt;       - path: /api</span><br><span class="line">&lt;         backend:</span><br><span class="line"><span class="comment">---</span></span><br><span class="line">&gt;           servicePort: 80</span><br><span class="line">&gt;         path: /</span><br><span class="line">&gt;       - backend:</span><br><span class="line">&gt;           servicePort: 7700</span><br><span class="line">&gt;         path: /healthz</span><br><span class="line">&gt;       - backend:</span><br><span class="line">18,19c20,21</span><br><span class="line">&lt;       - path: /test</span><br><span class="line">&lt;         backend:</span><br><span class="line"><span class="comment">---</span></span><br><span class="line">&gt;         path: /api</span><br><span class="line">&gt;       - backend:</span><br><span class="line">21a24</span><br><span class="line">&gt;         path: /test</span><br></pre></td></tr></table></figure>
+
+<p>Note:  </p>
+<ul>
+<li> JSON patch并不要求object为JSON, 也可为yaml, 见 <code>ingress_patch.yaml</code>为example.</li>
+<li> <code>patches</code>之前版本也写为<code>patchesJson6902</code></li>
+</ul>
+<p>相关Kustomize文档: </p>
+<ul>
+<li> <a target="_blank" rel="noopener" href="https://github.com/kubernetes-sigs/kustomize/blob/master/examples/jsonpatch.md">JSON Patching</a>  </li>
+<li> <a target="_blank" rel="noopener" href="https://github.com/kubernetes-sigs/kustomize/blob/master/examples/patchMultipleObjects.md">Patching multiple resources at once</a>  </li>
+</ul>
+<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><p><a target="_blank" rel="noopener" href="https://speakerdeck.com/spesnova/introduction-to-kustomize">简洁的Intro slide</a><br><a target="_blank" rel="noopener" href="https://github.com/kubernetes-sigs/kustomize/blob/master/examples/jsonpatch.md">JSON Patching</a><br><a target="_blank" rel="noopener" href="https://github.com/kubernetes-sigs/kustomize/blob/master/examples/patchMultipleObjects.md">Patching multiple resources at once</a>  </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Kubernetes/" rel="tag"># Kubernetes</a>
+              <a href="/tags/Kustomize/" rel="tag"># Kustomize</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/05/19/Structure-logging-in-Golang/" rel="prev" title="Structure logging in Golang">
+                  <i class="fa fa-chevron-left"></i> Structure logging in Golang
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/05/25/Kubectl-JSON-output-handling-and-JQ/" rel="next" title="Kubectl JSON output handling and JQ">
+                  Kubectl JSON output handling and JQ <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

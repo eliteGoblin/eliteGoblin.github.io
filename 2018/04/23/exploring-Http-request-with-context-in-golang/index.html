@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Preface想像如下场景：　　某天，满头大汗的客服同事找到你反馈一个用户详情(PersonDetail)的请求失败了，要求你调查．服务架构如下:   　  调用顺序解释:     前端请求通过HTTP到达gateway节点, 目的是获取person_id的PersonDetail, 包括Name,Address,Education信息  gateway节点需要从Name, Address, Ed">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Exploring param passing With Golang&#39;s HTTP Context Support">
+<meta property="og:url" content="https://elitegoblin.github.io/2018/04/23/exploring-Http-request-with-context-in-golang/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Preface想像如下场景：　　某天，满头大汗的客服同事找到你反馈一个用户详情(PersonDetail)的请求失败了，要求你调查．服务架构如下:   　  调用顺序解释:     前端请求通过HTTP到达gateway节点, 目的是获取person_id的PersonDetail, 包括Name,Address,Education信息  gateway节点需要从Name, Address, Ed">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-04-23T08:59:39.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2018/04/23/exploring-Http-request-with-context-in-golang/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2018&#x2F;04&#x2F;23&#x2F;exploring-Http-request-with-context-in-golang&#x2F;&quot;,&quot;path&quot;:&quot;2018&#x2F;04&#x2F;23&#x2F;exploring-Http-request-with-context-in-golang&#x2F;&quot;,&quot;title&quot;:&quot;Exploring param passing With Golang&#39;s HTTP Context Support&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Exploring param passing With Golang's HTTP Context Support | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9C%80%E6%B1%82%E5%8F%8A%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90"><span class="nav-number">2.</span> <span class="nav-text">需求及实现分析</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#server%E7%AB%AF%E5%AE%9E%E7%8E%B0%E8%A7%A3%E6%9E%90unique-request-id"><span class="nav-number">3.</span> <span class="nav-text">server端实现解析unique request id</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#function-wrapper%E5%A2%9E%E5%8A%A0%E5%87%BD%E6%95%B0%E8%A1%8C%E4%B8%BA"><span class="nav-number">3.1.</span> <span class="nav-text">function wrapper增加函数行为</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#HTTP-request%E7%9A%84context%E4%BC%A0%E9%80%92%E5%8F%82%E6%95%B0"><span class="nav-number">3.1.1.</span> <span class="nav-text">HTTP request的context传递参数</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AE%8C%E6%95%B4%E7%9A%84%E4%BE%8B%E5%AD%90"><span class="nav-number">3.2.</span> <span class="nav-text">完整的例子</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E8%83%BD%E8%87%AA%E5%8A%A8timeout%E7%9A%84HTTP-request"><span class="nav-number">4.</span> <span class="nav-text">实现能自动timeout的HTTP request</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#refs"><span class="nav-number">6.</span> <span class="nav-text">refs</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2018/04/23/exploring-Http-request-with-context-in-golang/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Exploring param passing With Golang's HTTP Context Support
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-04-23 16:59:39" itemprop="dateCreated datePublished" datetime="2018-04-23T16:59:39+08:00">2018-04-23</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        　
+
+<h4 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h4><p>想像如下场景：<br>　　<br>某天，满头大汗的客服同事找到你反馈一个用户详情(PersonDetail)的请求失败了，要求你调查．服务架构如下:  </p>
+　
+
+<p>调用顺序解释:  </p>
+<ol>
+<li> 前端请求通过HTTP到达gateway节点, 目的是获取person_id的PersonDetail, 包括Name,Address,Education信息</li>
+<li> gateway节点需要从Name, Address, Education后端节点分别获取相关信息</li>
+<li> gateway节点将各个后端节点的response整合成为一个json后，传给前端</li>
+</ol>
+<p>在这个过程中，各个后端服务节点都可能出问题导致此次请求失败，该如何查找问题呢？  </p>
+<p>这时如果有一个请求对应的一个uniqueId,用此可以将系统中这个request串起来：无论在哪个后端节点，只要在日志中过滤此uniqueId，就能找到对应日志，从而最终解决问题．  </p>
+<p>以上机制其实是分布式微服务系统的”刚需”，没有这种机制，几乎不可能进行有效的日志排查．　　</p>
+<p>接下来看看我们如何在用golang和HTTP实现的系统中实现上述机制．</p>
+<span id="more"></span>
+
+
+<h4 id="需求及实现分析"><a href="#需求及实现分析" class="headerlink" title="需求及实现分析"></a>需求及实现分析</h4><p>我们需要的其实是一种能在请求端传递uniqueId，并在请求到达的后端能将此uniqueId打印出来的机制:  </p>
+<p>考虑到我们使用的是HTTP，用HTTP传递和解析数据的方式都可以实现，如：  </p>
+<ul>
+<li>url parameter：  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http:my_server_addr/path?unique_id=xxxx</span><br></pre></td></tr></table></figure></li>
+<li>HTTP header  <figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// HTTP client设置header</span></span><br><span class="line">req.Header.Set(<span class="string">&quot;My-Request-ID&quot;</span>, <span class="string">&quot;xxxx&quot;</span>)</span><br><span class="line"><span class="comment">// HTTP server读取Header  </span></span><br><span class="line">reqID := req.Header.Get(<span class="string">&quot;My-Request-ID&quot;</span>)   </span><br></pre></td></tr></table></figure></li>
+<li>cookie，我们本文接下来的例子使用这种方式    <figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 设置请求时使用cookie</span></span><br><span class="line">cookie := http.Cookie&#123;Name: <span class="string">&quot;request_id&quot;</span>, Value: <span class="string">&quot;xxx&quot;</span>, Expires: expiration&#125;</span><br><span class="line">http.SetCookie(w, &amp;cookie) </span><br><span class="line"><span class="comment">// 服务端获取cookie</span></span><br><span class="line"><span class="comment">//   r is a *http.Request</span></span><br><span class="line">cookie, _ := r.Cookie(<span class="string">&quot;request_id&quot;</span>) </span><br></pre></td></tr></table></figure></li>
+</ul>
+<ul>
+<li> POST json数据，等等  </li>
+</ul>
+<p>实际工程中考虑到网络环境的复杂，需要HTTP client对外部HTTP请求能自动实现随时取消，超时取消等功能，这个golang已经有context机制来负责对超时和取消的控制，且在golang 1.7之后已经在HTTP包中集成了context．因此我们本篇文章的目的是：  </p>
+<ul>
+<li> 如何在golang中利用HTTP传递和解析uniqueId</li>
+<li> 如何利用context在进程内传递uniqueId并实现cancel和timeout发起的http request</li>
+</ul>
+<h4 id="server端实现解析unique-request-id"><a href="#server端实现解析unique-request-id" class="headerlink" title="server端实现解析unique request id"></a>server端实现解析unique request id</h4><h5 id="function-wrapper增加函数行为"><a href="#function-wrapper增加函数行为" class="headerlink" title="function wrapper增加函数行为"></a>function wrapper增加函数行为</h5><p>最简单的实现方式是在每个http handler里面解析HTTP传来的uniqueId，还有一种更好的方式，不用改动已经有的handler，利用函数编程思想，做一个通用的function wrapper来增加解析uniqueId的功能，并利用http的context将uniqueId传入目标函数，实例代码如下：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">AddContext</span><span class="params">(next http.Handler)</span> <span class="title">http</span>.<span class="title">Handler</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> http.HandlerFunc(<span class="function"><span class="keyword">func</span><span class="params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">        <span class="comment">// our own control code here</span></span><br><span class="line">        ...</span><br><span class="line">        next.ServeHTTP(w, r) </span><br><span class="line">    &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h6 id="HTTP-request的context传递参数"><a href="#HTTP-request的context传递参数" class="headerlink" title="HTTP request的context传递参数"></a>HTTP request的context传递参数</h6><figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">AddContext</span><span class="params">(next http.Handler)</span> <span class="title">http</span>.<span class="title">Handler</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> http.HandlerFunc(<span class="function"><span class="keyword">func</span><span class="params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">        <span class="comment">// out extra parse uniqueId code here</span></span><br><span class="line">        uniqueId := getUniqueIdFromHTTPReq()</span><br><span class="line">        <span class="comment">// save uniqueId in context obj</span></span><br><span class="line">        ctx := context.WithValue(r.Context(), <span class="string">&quot;unique_id&quot;</span>, uniqueId)</span><br><span class="line">        <span class="comment">// do the real request handle job with uniqueId passed by context</span></span><br><span class="line">        next.ServeHTTP(w, r.WithContext(ctx))</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="完整的例子"><a href="#完整的例子" class="headerlink" title="完整的例子"></a>完整的例子</h5><p>以下的代码来自<a target="_blank" rel="noopener" href="https://gocodecloud.com/blog/2016/11/15/simple-golang-http-request-context-example/">Simple Golang HTTP Request Context Example</a>，感谢作者提供的有趣例子：  </p>
+<ul>
+<li> 关键在于StatusPage函数，如果user已经通过cookie设置了Username，则将其通过我们的middleware wrapper：　<strong>AddContext</strong>传入我们的HTTP handler，同样可以用来实现我们开始提出的uniqueId问题．　　</li>
+</ul>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    mux := http.NewServeMux()</span><br><span class="line"></span><br><span class="line">    mux.Handle(<span class="string">&quot;/&quot;</span>, AddContext(http.HandlerFunc(StatusPage)))</span><br><span class="line">    mux.HandleFunc(<span class="string">&quot;/login&quot;</span>, LoginPage)</span><br><span class="line">    mux.HandleFunc(<span class="string">&quot;/logout&quot;</span>, LogoutPage)</span><br><span class="line"></span><br><span class="line">    log.Println(<span class="string">&quot;Start server on port :8085&quot;</span>)</span><br><span class="line">    contextedMux := AddContext(mux)</span><br><span class="line">    log.Fatal(http.ListenAndServe(<span class="string">&quot;:8085&quot;</span>, contextedMux))</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">StatusPage</span><span class="params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> username := r.Context().Value(<span class="string">&quot;Username&quot;</span>); username != <span class="literal">nil</span> &#123;</span><br><span class="line">        w.WriteHeader(http.StatusOK)</span><br><span class="line">        w.Write([]<span class="keyword">byte</span>(<span class="string">&quot;Hello &quot;</span> + username.(<span class="keyword">string</span>) + <span class="string">&quot;\n&quot;</span>))</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        w.WriteHeader(http.StatusNotFound)</span><br><span class="line">        w.Write([]<span class="keyword">byte</span>(<span class="string">&quot;Not Logged in&quot;</span>))</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">LoginPage</span><span class="params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">    expiration := time.Now().Add(<span class="number">365</span> * <span class="number">24</span> * time.Hour) <span class="comment">// Set to expire in 1 year</span></span><br><span class="line">    cookie := http.Cookie&#123;Name: <span class="string">&quot;username&quot;</span>, Value: <span class="string">&quot;alice_cooper@gmail.com&quot;</span>, Expires: expiration&#125;</span><br><span class="line">    http.SetCookie(w, &amp;cookie)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">LogoutPage</span><span class="params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">    expiration := time.Now().AddDate(<span class="number">0</span>, <span class="number">0</span>, <span class="number">-1</span>) <span class="comment">//Set to expire in the past</span></span><br><span class="line">    cookie := http.Cookie&#123;Name: <span class="string">&quot;username&quot;</span>, Value: <span class="string">&quot;alice_cooper@gmail.com&quot;</span>, Expires: expiration&#125;</span><br><span class="line">    http.SetCookie(w, &amp;cookie)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">AddContext</span><span class="params">(next http.Handler)</span> <span class="title">http</span>.<span class="title">Handler</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> http.HandlerFunc(<span class="function"><span class="keyword">func</span><span class="params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">        log.Println(r.Method, <span class="string">&quot;-&quot;</span>, r.RequestURI)</span><br><span class="line">        cookie, _ := r.Cookie(<span class="string">&quot;username&quot;</span>)</span><br><span class="line">        fmt.Println(<span class="string">&quot;Cookie got: &quot;</span>, cookie)</span><br><span class="line">        <span class="keyword">if</span> cookie != <span class="literal">nil</span> &#123;</span><br><span class="line">            ctx := context.WithValue(r.Context(), <span class="string">&quot;Username&quot;</span>, cookie.Value)</span><br><span class="line">            next.ServeHTTP(w, r.WithContext(ctx))</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            next.ServeHTTP(w, r)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们可以用curl来发出带cookie的HTTP请求</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl localhost:8085/ --cookie &quot;username=alice_cooper@gmail.com&quot;</span><br></pre></td></tr></table></figure>
+
+<h4 id="实现能自动timeout的HTTP-request"><a href="#实现能自动timeout的HTTP-request" class="headerlink" title="实现能自动timeout的HTTP request"></a>实现能自动timeout的HTTP request</h4><p>当gateway节点请求后端时，本身会作为一个http client，我们如何利用context实现具备timeout行为的HTTP request呢?思路如下:  </p>
+<ul>
+<li> 将阻塞执行的HTTP request函数放入goroutine中，并将结果返回至answerChannel</li>
+<li> 主goroutine用select来判断context的DoneChannel和answerChannel</li>
+</ul>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">jobWithCancelHandler</span><span class="params">(w http.ResponseWriter, r * http.Request)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 取得request传入的context，增加5秒timeout功能</span></span><br><span class="line">   ctx,cancel = context.WithTimeout(r.Context(), <span class="number">5</span> * time.Second)</span><br><span class="line">   <span class="keyword">select</span>&#123;</span><br><span class="line">    <span class="keyword">case</span> &lt;-ctx.Done():</span><br><span class="line">        log.Println(ctx.Err())</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    <span class="keyword">case</span> result:=&lt;-longRunningCalculation(timecost):</span><br><span class="line">        io.WriteString(w,result)</span><br><span class="line">   &#125; </span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">longRunningCalculation</span><span class="params">(timeCost <span class="keyword">int</span>)</span><span class="title">chan</span> <span class="title">string</span></span>&#123;</span><br><span class="line">    result:=<span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">string</span>)</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span> <span class="params">()</span></span>&#123;</span><br><span class="line">        time.Sleep(time.Second*(time.Duration(timeCost)))</span><br><span class="line">        result&lt;-<span class="string">&quot;Done&quot;</span></span><br><span class="line">    &#125;()</span><br><span class="line">    <span class="keyword">return</span> result</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>本文通过实际工作中排查系统日志需求，引入golang中利用HTTP传递request相关参数的一般方法: 利用context，同时方便的实现了HTTP request的cancel和timeout控制．　　</p>
+<h4 id="refs"><a href="#refs" class="headerlink" title="refs"></a>refs</h4><p><a target="_blank" rel="noopener" href="https://gocodecloud.com/blog/2016/11/15/simple-golang-http-request-context-example/">Simple Golang HTTP Request Context Example</a>　　</p>
+<p><a target="_blank" rel="noopener" href="http://www.ruanyifeng.com/blog/2011/09/curl.html">curl网站开发指南</a>　　</p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/u014029783/article/details/53782864">使用Golang的Context管理上下文</a>　　</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2018/04/11/TCP-connection-reuse-when-HTTP-in-golang/" rel="prev" title="TCP connection reuse when HTTP in golang">
+                  <i class="fa fa-chevron-left"></i> TCP connection reuse when HTTP in golang
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/05/18/using-gomock-in-TDD/" rel="next" title="using gomock in TDD">
+                  using gomock in TDD <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

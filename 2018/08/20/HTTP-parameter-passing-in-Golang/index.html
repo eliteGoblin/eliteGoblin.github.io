@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="PrefaceIn HTTP API design, how parameters are passed is quite important. Let’s see the way how to do it in Golang.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="HTTP parameter passing in Golang">
+<meta property="og:url" content="https://elitegoblin.github.io/2018/08/20/HTTP-parameter-passing-in-Golang/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="PrefaceIn HTTP API design, how parameters are passed is quite important. Let’s see the way how to do it in Golang.">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-08-20T09:14:29.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="HTTP Golang">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2018/08/20/HTTP-parameter-passing-in-Golang/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2018&#x2F;08&#x2F;20&#x2F;HTTP-parameter-passing-in-Golang&#x2F;&quot;,&quot;path&quot;:&quot;2018&#x2F;08&#x2F;20&#x2F;HTTP-parameter-passing-in-Golang&#x2F;&quot;,&quot;title&quot;:&quot;HTTP parameter passing in Golang&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>HTTP parameter passing in Golang | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#The-Way-HTTP-do-it"><span class="nav-number">2.</span> <span class="nav-text">The Way HTTP do it</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#How-to-pass-in-Golang"><span class="nav-number">3.</span> <span class="nav-text">How to pass in Golang</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Pass-in-URL-parameters"><span class="nav-number">3.1.</span> <span class="nav-text">Pass in URL parameters</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Pass-in-URL-path"><span class="nav-number">3.2.</span> <span class="nav-text">Pass in URL path</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Pass-in-JSON-Body"><span class="nav-number">3.3.</span> <span class="nav-text">Pass in JSON Body</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Conclusion"><span class="nav-number">4.</span> <span class="nav-text">Conclusion</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Reference"><span class="nav-number">5.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2018/08/20/HTTP-parameter-passing-in-Golang/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          HTTP parameter passing in Golang
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-08-20 17:14:29" itemprop="dateCreated datePublished" datetime="2018-08-20T17:14:29+08:00">2018-08-20</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <div align="center">
+
+</div>
+
+<h4 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h4><p>In HTTP API design, how parameters are passed is quite important. Let’s see the way how to do it in Golang.</p>
+<span id="more"></span>
+
+<h4 id="The-Way-HTTP-do-it"><a href="#The-Way-HTTP-do-it" class="headerlink" title="The Way HTTP do it"></a>The Way HTTP do it</h4><p>There are mainly 3 ways to pass data when HTTP: </p>
+<ul>
+<li> encode in url parameters:<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http:&#x2F;&#x2F;foo.com&#x2F;login?name&#x3D;joe&amp;dob&#x3D;19650203</span><br></pre></td></tr></table></figure></li>
+<li> In url path, RESTful way:<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># get all articles under health tag and set date</span><br><span class="line">GET http:&#x2F;&#x2F;foo.com&#x2F;articles&#x2F;&#123;health&#125;&#x2F;&#123;date&#125;</span><br></pre></td></tr></table></figure></li>
+<li> In JSON body<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="string">&quot;id&quot;</span> : <span class="string">&quot;123&quot;</span>,</span><br><span class="line">    <span class="string">&quot;name&quot;</span> : <span class="string">&quot;frank&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="How-to-pass-in-Golang"><a href="#How-to-pass-in-Golang" class="headerlink" title="How to pass in Golang"></a>How to pass in Golang</h4><p>following illustration will be using <em>github.com/gorilla/mux</em> to build HTTP server: </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> <span class="string">&quot;github.com/gorilla/mux&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewRouter</span><span class="params">()</span> <span class="title">http</span>.<span class="title">Handler</span></span> &#123;</span><br><span class="line">    router := mux.NewRouter()</span><br><span class="line"></span><br><span class="line">    router.HandleFunc(<span class="string">&quot;/&quot;</span>, action.Index).Methods(<span class="string">&quot;GET&quot;</span>)</span><br><span class="line">    router.HandleFunc(<span class="string">&quot;/v1/trip_info/&#123;date&#125;/count&quot;</span>, action.GetCabsPickupCountInfo).Methods(<span class="string">&quot;POST&quot;</span>)</span><br><span class="line">    router.HandleFunc(<span class="string">&quot;/v1/trip_info/update_cache&quot;</span>, action.UpdateCache).Methods(<span class="string">&quot;PUT&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> router</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="Pass-in-URL-parameters"><a href="#Pass-in-URL-parameters" class="headerlink" title="Pass in URL parameters"></a>Pass in URL parameters</h5><p>pass name and D.O.B like following</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http:&#x2F;&#x2F;foo.com&#x2F;login?name&#x3D;joe&amp;dob&#x3D;19650203</span><br></pre></td></tr></table></figure>
+
+<p>parse data in parameters:  </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Login</span><span class="params">(res http.ResponseWriter, req *http.Request)</span></span> &#123;</span><br><span class="line">    name := req.URL.Query().Get(<span class="string">&quot;name&quot;</span>)</span><br><span class="line">    dob := req.URL.Query().Get(<span class="string">&quot;dob&quot;</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="Pass-in-URL-path"><a href="#Pass-in-URL-path" class="headerlink" title="Pass in URL path"></a>Pass in URL path</h5><p>pass in URL path, following is how to pass date:   </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;v1&#x2F;trip_info&#x2F;&#123;date&#125;&#x2F;count</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">GetCabsPickupCountInfo</span><span class="params">(res http.ResponseWriter, req *http.Request)</span></span> &#123;</span><br><span class="line">    vars := mux.Vars(req)</span><br><span class="line">    callID := vars[<span class="string">&quot;date&quot;</span>]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="Pass-in-JSON-Body"><a href="#Pass-in-JSON-Body" class="headerlink" title="Pass in JSON Body"></a>Pass in JSON Body</h5><p>We can also pass parameters in HTTP body using JSON: </p>
+<p>in data.json file</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;id&quot;</span>: <span class="string">&quot;1&quot;</span>,</span><br><span class="line">  <span class="string">&quot;date&quot;</span> : <span class="string">&quot;2018-08-11&quot;</span>,</span><br><span class="line">  <span class="string">&quot;tags&quot;</span> : [<span class="string">&quot;health&quot;</span>, <span class="string">&quot;sports&quot;</span>],</span><br><span class="line">  <span class="string">&quot;title&quot;</span> :  <span class="string">&quot;article 1 changed by frank&quot;</span>,</span><br><span class="line">  <span class="string">&quot;body&quot;</span>  :  <span class="string">&quot;article 1 body&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Following command will invoke article_service/articles/create API, passing json in HTTP body</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -XPOST http:&#x2F;&#x2F;article_service&#x2F;articles&#x2F;create -d@data.json</span><br></pre></td></tr></table></figure>
+
+<p>using following code to parse data from HTTP JSON body:  </p>
+<ul>
+<li><p> Create a construct to unmarshal json</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Article <span class="keyword">struct</span> &#123;</span><br><span class="line">    Id <span class="keyword">string</span>           <span class="string">`json:&quot;id&quot;`</span></span><br><span class="line">    Title <span class="keyword">string</span>        <span class="string">`json:&quot;title&quot;`</span></span><br><span class="line">    Date <span class="keyword">string</span>         <span class="string">`json:&quot;date&quot;`</span></span><br><span class="line">    Body <span class="keyword">string</span>         <span class="string">`json:&quot;body&quot;`</span></span><br><span class="line">    Tags []<span class="keyword">string</span>       <span class="string">`json:&quot;tags&quot;`</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p> Parse HTTP Body</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> (</span><br><span class="line">        maxBodyLength = <span class="number">1000</span></span><br><span class="line">)</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ArticleUpsert</span><span class="params">(res http.ResponseWriter, req *http.Request)</span></span> &#123;</span><br><span class="line">        <span class="comment">// in case coming request is too large</span></span><br><span class="line">        req.Body = http.MaxBytesReader(res, req.Body, maxBodyLength)</span><br><span class="line">        body, err := ioutil.ReadAll(req.Body)</span><br><span class="line">        <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">                log.Error(err)</span><br><span class="line">                <span class="keyword">return</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">var</span> article Article</span><br><span class="line">        err = json.Unmarshal(body, &amp;article)</span><br><span class="line">        <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">               ...</span><br><span class="line">        &#125;</span><br><span class="line">        ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h4><p>In this blog we see 3 different ways to get data in HTTP by Golang; In a lot of browsers, url length may have limit</p>
+<blockquote>
+<p> URLs over 2,000 characters will not work in the most popular web browsers. </p>
+</blockquote>
+<p>So if it is required to pass more data, pass in HTTP body may be a better choice, there is no limit by specification, but server or client have different limitations about it. </p>
+<h4 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h4><p><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/417142/what-is-the-maximum-length-of-a-url-in-different-browsers">What is the maximum length of a URL in different browsers?</a><br><a target="_blank" rel="noopener" href="https://serverfault.com/questions/151090/is-there-a-maximum-size-for-content-of-an-http-post">What is the size limit of a post request?</a>  </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/HTTP-Golang/" rel="tag"># HTTP Golang</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2018/08/05/Is-Golang-pass-by-value-or-pass-by-reference/" rel="prev" title="Is Golang pass by value or by reference?">
+                  <i class="fa fa-chevron-left"></i> Is Golang pass by value or by reference?
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/09/12/Full-text-search-with-Golang-and-ElasticSearch/" rel="next" title="Full-text search with Golang and ElasticSearch">
+                  Full-text search with Golang and ElasticSearch <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

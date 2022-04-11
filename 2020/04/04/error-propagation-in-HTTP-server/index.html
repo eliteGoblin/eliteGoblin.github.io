@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Preface    错误处理是程序设计的重要环节，理想的错误处理应为开发人员提供详细的context，并记录日志;它排查问题的重要信息源。并能为用户提供恰到好处的信息: 适当抽象，隐藏程序细节。最好能提供解决建议，或者reference id, 协助开发人员缩小排查范围。 特别的, 如何在HTTP server中建立正确的error处理机制, 并能自动生成符合HTTP语义的response呢?">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Golang HTTP server中的error propagation">
+<meta property="og:url" content="https://elitegoblin.github.io/2020/04/04/error-propagation-in-HTTP-server/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Preface    错误处理是程序设计的重要环节，理想的错误处理应为开发人员提供详细的context，并记录日志;它排查问题的重要信息源。并能为用户提供恰到好处的信息: 适当抽象，隐藏程序细节。最好能提供解决建议，或者reference id, 协助开发人员缩小排查范围。 特别的, 如何在HTTP server中建立正确的error处理机制, 并能自动生成符合HTTP语义的response呢?">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-04-04T04:45:01.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="golang">
+<meta property="article:tag" content="HTTP">
+<meta property="article:tag" content="error">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2020/04/04/error-propagation-in-HTTP-server/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2020&#x2F;04&#x2F;04&#x2F;error-propagation-in-HTTP-server&#x2F;&quot;,&quot;path&quot;:&quot;2020&#x2F;04&#x2F;04&#x2F;error-propagation-in-HTTP-server&#x2F;&quot;,&quot;title&quot;:&quot;Golang HTTP server中的error propagation&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Golang HTTP server中的error propagation | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Error-propagation"><span class="nav-number">2.</span> <span class="nav-text">Error propagation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Error-handling-in-Golang"><span class="nav-number">3.</span> <span class="nav-text">Error handling in Golang</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#juju-errors"><span class="nav-number">4.</span> <span class="nav-text">juju&#x2F;errors</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#error%E8%BD%AC%E6%8D%A2%E4%B8%BAHTTP-error-response"><span class="nav-number">5.</span> <span class="nav-text">error转换为HTTP error response</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Put-it-together"><span class="nav-number">6.</span> <span class="nav-text">Put it together</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Example-%E6%A8%A1%E6%8B%9Fread-user-info%E7%9A%84%E5%90%84%E7%A7%8D%E5%8F%AF%E8%83%BD%E9%94%99%E8%AF%AF"><span class="nav-number">7.</span> <span class="nav-text">Example: 模拟read user info的各种可能错误</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E8%A1%8Cdemo"><span class="nav-number">7.1.</span> <span class="nav-text">运行demo</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%90"><span class="nav-number">7.2.</span> <span class="nav-text">代码分析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">8.</span> <span class="nav-text">总结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2020/04/04/error-propagation-in-HTTP-server/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Golang HTTP server中的error propagation
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2020-04-04 12:45:01" itemprop="dateCreated datePublished" datetime="2020-04-04T12:45:01+08:00">2020-04-04</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><div align="center">
+
+</div>
+
+<p>错误处理是程序设计的重要环节，理想的错误处理应为开发人员提供详细的context，并记录日志;它排查问题的重要信息源。并能为用户提供恰到好处的信息: 适当抽象，隐藏程序细节。最好能提供解决建议，或者<code>reference id</code>, 协助开发人员缩小排查范围。</p>
+<p>特别的, 如何在HTTP server中建立正确的error处理机制, 并能自动生成符合HTTP语义的response呢? </p>
+<p>本文提出一个简单解决方案: 提供error的stack trace, 并能将error转换为HTTP error.</p>
+<span id="more"></span>
+
+<h2 id="Error-propagation"><a href="#Error-propagation" class="headerlink" title="Error propagation"></a>Error propagation</h2><p>软件模块可能嵌套较多层级，一个error由low-level模块产生，一级级的传递到上层被处理，再反馈给用户，称为error propagation, 像环环相扣的链条. 即error以逆调用链方向传递(称为Wrap, 每层包裹一些context, 再传递出去)，并记录如代码位置, 函数名等关键信息，这样的error stack能还原出错时代码执行路径，对理解问题至关重要.</p>
+<p>想想如果没有调用栈, 仅凭一条error message, 且往往是内部库函数产生的error,被很多代码调用, 根本无法理解程序执行路径.</p>
+<p>Java有完善的Error handling, 能记录error stack: </p>
+<div align="center">
+
+</div>
+
+<p>另一个问题: 在HTTP Server场景，为遵循HTTP标准，还需要考虑出error与HTTP response的转换: 涉及到定制HTTP status code, response header 即response body. </p>
+<h2 id="Error-handling-in-Golang"><a href="#Error-handling-in-Golang" class="headerlink" title="Error handling in Golang"></a>Error handling in Golang</h2><p>Golang自诞生来，因其极简的设计，内部对error propagation并无支持. (直到Go 1.13加入初步支持，远非完美, 前身是<code>golang.org/x/xerrors</code>) 但有成熟的三方库可采用，如<code>github.com/pkg/errors</code>和<code>github.com/juju/errors</code>, 但error propagation思路大同小异.</p>
+<p>Error propagation的套路便是由错误源头开始，在向上层传递错误时，层层”包裹”, 附加context. 而在错误处理层, 又需要解开包裹，取出错误链条的第一个Error, 即错误源头，从而区分处理不同error。</p>
+<p>一个函数调用链以源错误为开端，层层返回给调用层，同时附加调用栈和额外message，这个简单的模型足以处理一般系统的错误。</p>
+<p>因此error库至少需要两个函数<code>Wrap</code>和<code>Cause</code>: <code>Wrap</code>用来包装error: 添加context形成新error;<code>Cause</code>, 也成为Unwrap则用于取的被包裹的原始错误。</p>
+<p>接下来我们来看看如何用<code>github.com/juju/errors</code>来实现error propagation并且转换为HTTP response. </p>
+<h2 id="juju-errors"><a href="#juju-errors" class="headerlink" title="juju/errors"></a>juju/errors</h2><p><a target="_blank" rel="noopener" href="https://github.com/juju/errors">juju/errors</a>, github收获千星，提供了简单的error Unwrap逻辑，并内置了一些标准HTTP错误类型。</p>
+<p>因为我们想做一些额外定制: 区分是否Server端错误，附加error时HTTP response header等，仅用到<code>juju/errors</code>的Wrap和Cause函数, 并没有使用其定义的错误类型，而选择我们自己定义能对应到HTTP标准错误的类型。</p>
+<p>在<code>juju/errors</code>中</p>
+<p>新建error, 替代标准errors函数，新建的error会记录call stack. </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">New(message <span class="keyword">string</span>) error</span><br><span class="line">Errorf(format <span class="keyword">string</span>, args ...<span class="keyword">interface</span>&#123;&#125;) error</span><br></pre></td></tr></table></figure>
+
+<p>Wrap error:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Trace(other error) error</span><br><span class="line">Annotate(other error, message <span class="keyword">string</span>) error</span><br></pre></td></tr></table></figure>
+
+<p>Trace仅Wrap, Annotate会增加额外message. </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">TestJuju</span><span class="params">(t *testing.T)</span></span> &#123;</span><br><span class="line">	err := errors.New(<span class="string">&quot;root cause&quot;</span>) <span class="comment">// line 11</span></span><br><span class="line">	err = errors.Trace(err) <span class="comment">// line 12</span></span><br><span class="line">	err = errors.Annotatef(err, <span class="string">&quot;wrap with annotate\n&quot;</span>) <span class="comment">// line 13</span></span><br><span class="line">	fmt.Printf(<span class="string">&quot;%s&quot;</span>, errors.ErrorStack(err))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>输出</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">errors_propagation/errors/juju_test.go:11: root cause</span><br><span class="line">errors_propagation/errors/juju_test.go:12: </span><br><span class="line">errors_propagation/errors/juju_test.go:13: wrap with annotate</span><br></pre></td></tr></table></figure>
+
+<p>可见Error stack打印出带有函数行数的调用链。</p>
+<p>打印Cause: </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fmt.Printf(<span class="string">&quot;Cause is %+v\n&quot;</span>, errors.Cause(err))</span><br></pre></td></tr></table></figure>
+
+<p>输出root cause: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">errors_propagation&#x2F;errors&#x2F;juju_test.go:11: root cause</span><br></pre></td></tr></table></figure>
+
+<p>可见用errors.New创建的error,带有context信息, 而非<code>juju/errors</code>创建的信息则没有, 可以用<code>errors.Trace</code>进行wrap. </p>
+<p>测试代码可以在<a target="_blank" rel="noopener" href="https://github.com/eliteGoblin/code_4_blog/blob/master/errors_propagation/errors/juju_test.go">这里</a>找到. </p>
+<h2 id="error转换为HTTP-error-response"><a href="#error转换为HTTP-error-response" class="headerlink" title="error转换为HTTP error response"></a>error转换为HTTP error response</h2><p>一般情况是: HTTP server的handler layer接到请求，转入business logic; 层层调用之后，某处报错，错误再返回到handler层，这时需要将错误转换为符合HTTP语义的response. 如: 权限不足返回<code>403</code>, 数据未找到返回<code>404</code>, 程序崩溃返回<code>500</code>. </p>
+<p>有了Error propagation为基础，我们可以提取root cause, 我们需要定义一系列标准HTTP error, 能从error中提取HTTP status code, response header及error message. </p>
+<p>以Status code为例，我们自定义错误需要实现<code>HTTPStatus() int</code> interface, 错误处理模块根据interface转换来判断返回的错误是否能提取status code, 同理还有是否是Service Failure等其他功能. </p>
+<p>例如404错误，我们定义: </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> BadRequest <span class="keyword">struct</span> &#123;</span><br><span class="line">	message <span class="keyword">string</span></span><br><span class="line">	code    <span class="keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(br BadRequest)</span> <span class="title">Error</span><span class="params">()</span> <span class="title">string</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> br.message</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(br BadRequest)</span> <span class="title">Code</span><span class="params">()</span> <span class="title">string</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> br.code</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(br BadRequest)</span> <span class="title">HTTPStatus</span><span class="params">()</span> <span class="title">int</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> http.StatusBadRequest</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(br BadRequest)</span> <span class="title">IsServiceFailure</span><span class="params">()</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewBadRequest</span><span class="params">(code, msg <span class="keyword">string</span>, args ...<span class="keyword">interface</span>&#123;&#125;)</span> *<span class="title">BadRequest</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> &amp;BadRequest&#123;</span><br><span class="line">		code:    code,</span><br><span class="line">		message: fmt.Sprintf(msg, args...),</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>处理错误时, 利用type conversion来判断是否是我们定义的标准HTTP错误, 既能提取status code.</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> hs, ok := errors.Cause(err).(HasHTTPStatus); ok &#123;</span><br><span class="line">	<span class="keyword">return</span> hs.HTTPStatus()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>同样，我们可以实现HTTP response header等其他功能.</p>
+<h2 id="Put-it-together"><a href="#Put-it-together" class="headerlink" title="Put it together"></a>Put it together</h2><p>Error转换为HTTP response机制需要在所有HTTP handler共享, HTTP handler仅需将返回的error传入转换代码，转换模块负责写HTTP status, header, body等. </p>
+<p>一个好办法是function adapter， 将标准的http.Handler添加error返回值，adapt过程中处理error</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">handleExample</span><span class="params">(w http.ResponseWriter, r *http.Request)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    ...</span><br><span class="line">    err = businessLogic()</span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> errors.Trace(err)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>声明adaper, 调用自定义的<code>WriteError</code>函数转换error并写HTTP response:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> WebHandlerFunc <span class="function"><span class="keyword">func</span><span class="params">(http.ResponseWriter, *http.Request)</span> <span class="title">error</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">AddErrorHandler</span><span class="params">(handler WebHandlerFunc)</span> <span class="title">http</span>.<span class="title">HandlerFunc</span></span> &#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> http.HandlerFunc(<span class="function"><span class="keyword">func</span><span class="params">(w http.ResponseWriter, r *http.Request)</span></span> &#123;</span><br><span class="line">		<span class="keyword">if</span> err := handler(w, r); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			logrus.Errorf(<span class="string">&quot;%+v&quot;</span>, errors.ErrorStack(err))</span><br><span class="line">			WriteError(w, err)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Example-模拟read-user-info的各种可能错误"><a href="#Example-模拟read-user-info的各种可能错误" class="headerlink" title="Example: 模拟read user info的各种可能错误"></a>Example: 模拟read user info的各种可能错误</h2><p>这里带给大家的例子是: 一个<code>GET /users?userID=xxx</code>endpoint, 不同的userID不同的HTTP response, 来模拟真实HTTP server遇到的情况, 404 user not found, 403 forbidden, 500 server error, 正常返回等，可以通过这个精简的例子来看error propgation, 即error是如何转为标准HTTP response的. </p>
+<p>例子代码在[^1]</p>
+<h3 id="运行demo"><a href="#运行demo" class="headerlink" title="运行demo"></a>运行demo</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go build . &amp;&amp; .&#x2F;error_propagation</span><br></pre></td></tr></table></figure>
+
+<p>试返回404的user</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -v http:&#x2F;&#x2F;localhost:8090&#x2F;users\?userID\&#x3D;notfountindb</span><br></pre></td></tr></table></figure>
+
+<p>返回</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&lt; HTTP&#x2F;1.1 404 Not Found</span><br><span class="line">&lt; Content-Type: application&#x2F;json</span><br><span class="line">&lt; Date: Sat, 04 Apr 2020 13:11:40 GMT</span><br><span class="line">&lt; Content-Length: 42</span><br><span class="line">&lt; </span><br><span class="line">* Connection #0 to host localhost left intact</span><br><span class="line">&#123;&quot;error&quot;:&quot;userID: notfountindb not found&quot;&#125;% </span><br></pre></td></tr></table></figure>
+
+<p>同时程序打印error stack: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;level&quot;: &quot;error&quot;,</span><br><span class="line">  &quot;msg&quot;: &quot;userID: notfountindb not found\n&#x2F;home&#x2F;frank.sun&#x2F;git_repo&#x2F;code_4_blog&#x2F;errors_propagation&#x2F;user.go:67: \n&#x2F;home&#x2F;frank.sun&#x2F;git_repo&#x2F;code_4_blog&#x2F;errors_propagation&#x2F;user.go:31: &quot;,</span><br><span class="line">  &quot;time&quot;: &quot;2020-04-05T00:11:40+11:00&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="代码分析"><a href="#代码分析" class="headerlink" title="代码分析"></a>代码分析</h3><p>产生错误时，new我们定义的标准HTTP错误<code>NewBadRequest</code>, 同时Wrap: 加入错误产生的行数. </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">checkUserID</span><span class="params">(userID <span class="keyword">string</span>)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> userID == badUserID &#123;</span><br><span class="line">		<span class="keyword">return</span> errors.Trace(</span><br><span class="line">			se.NewBadRequest(<span class="string">&quot;INVALID_USERID&quot;</span>, <span class="string">&quot;malformed userID provided: %s&quot;</span>, badUserID))</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>HTTP handler中发现错误, Wrap并返回: </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">handleUser</span><span class="params">(w http.ResponseWriter, r *http.Request)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    userID := r.URL.Query().Get(<span class="string">&quot;userID&quot;</span>)</span><br><span class="line">    err := checkUserID(userID)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> errors.Trace(err)</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>, 错误处理层<code>AddErrorHandler</code>负责写HTTP response, 核心是调用转换函数, 写Status Code, response header及标准化的error body: 包含<code>error code</code>和<code>error message</code> </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WriteError</span><span class="params">(w http.ResponseWriter, err error)</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> err == <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	status := se.HTTPStatusCode(err)</span><br><span class="line"></span><br><span class="line">	extraHeaders := se.ResponseHeaders(err)</span><br><span class="line">	<span class="keyword">for</span> k, v := <span class="keyword">range</span> extraHeaders &#123;</span><br><span class="line">		w.Header().Set(k, v)</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	w.Header().Set(<span class="string">&quot;Content-Type&quot;</span>, <span class="string">&quot;application/json&quot;</span>)</span><br><span class="line">	w.WriteHeader(status)</span><br><span class="line">	w.Write(marshalError(err, status))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>我们分析error处理的一般思路: error propagation; 及如何将模块error propagate到用户: 转化为HTTP error response. 并结合demo给出了处理框架. </p>
+<p>这套处理思路来自现在任职公司Nearmap, API组(这是一家好公司!); 是经过实际验证，靠谱的解决方案. 同时也解决了之前自己的疑问: 如何在HTTP server中妥善处理error, 在此表示感谢. </p>
+<p>[^1]: <a target="_blank" rel="noopener" href="https://github.com/eliteGoblin/code_4_blog/blob/master/errors_propagation/">Demo code</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/golang/" rel="tag"># golang</a>
+              <a href="/tags/HTTP/" rel="tag"># HTTP</a>
+              <a href="/tags/error/" rel="tag"># error</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/11/28/BDD-1/" rel="prev" title="Golang BDD入门: Ginkgo和Gomega实现(1)">
+                  <i class="fa fa-chevron-left"></i> Golang BDD入门: Ginkgo和Gomega实现(1)
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2020/04/11/BDD-2/" rel="next" title="Golang BDD入门: Ginkgo和Gomega实现(2)">
+                  Golang BDD入门: Ginkgo和Gomega实现(2) <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

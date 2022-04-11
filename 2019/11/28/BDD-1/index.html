@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Preface在之前文章讲述过如何在Golang中进行TDD，相信大家也听说过BDD(Behavior Drive Development)， 和TDD仅差第一个单词: 由Test换成Behavior， 这个代表什么？ BDD和TDD看着很类似，都是test case first，然后实现可以通过满足test case的代码，那它和TDD关系如何，区别在哪？在Golang中怎么进行BDD实践呢？我">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Golang BDD入门: Ginkgo和Gomega实现(1)">
+<meta property="og:url" content="https://elitegoblin.github.io/2019/11/28/BDD-1/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Preface在之前文章讲述过如何在Golang中进行TDD，相信大家也听说过BDD(Behavior Drive Development)， 和TDD仅差第一个单词: 由Test换成Behavior， 这个代表什么？ BDD和TDD看着很类似，都是test case first，然后实现可以通过满足test case的代码，那它和TDD关系如何，区别在哪？在Golang中怎么进行BDD实践呢？我">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-11-28T08:41:32.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.277Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="Golang">
+<meta property="article:tag" content="testing">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2019/11/28/BDD-1/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2019&#x2F;11&#x2F;28&#x2F;BDD-1&#x2F;&quot;,&quot;path&quot;:&quot;2019&#x2F;11&#x2F;28&#x2F;BDD-1&#x2F;&quot;,&quot;title&quot;:&quot;Golang BDD入门: Ginkgo和Gomega实现(1)&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Golang BDD入门: Ginkgo和Gomega实现(1) | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BDD-%E7%AE%80%E4%BB%8B"><span class="nav-number">2.</span> <span class="nav-text">BDD 简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#BDD-vs-TDD"><span class="nav-number">2.1.</span> <span class="nav-text">BDD vs TDD</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BDD%E7%A4%BA%E4%BE%8B-%E8%B4%AD%E7%89%A9%E8%BD%A6%E7%B3%BB%E7%BB%9F"><span class="nav-number">2.2.</span> <span class="nav-text">BDD示例: 购物车系统</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BDD-%E5%9C%A8%E6%B5%8B%E8%AF%95%E6%9E%B6%E6%9E%84%E4%B8%AD%E7%9A%84%E4%BD%8D%E7%BD%AE"><span class="nav-number">2.3.</span> <span class="nav-text">BDD 在测试架构中的位置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BDD-%E6%9B%B4%E5%A4%9A%E6%80%9D%E8%80%83"><span class="nav-number">2.4.</span> <span class="nav-text">BDD 更多思考</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GWT-%E8%AF%AD%E6%B3%95"><span class="nav-number">2.5.</span> <span class="nav-text">GWT 语法</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BDD-in-golang"><span class="nav-number">3.</span> <span class="nav-text">BDD in golang</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2019/11/28/BDD-1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Golang BDD入门: Ginkgo和Gomega实现(1)
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-11-28 16:41:32" itemprop="dateCreated datePublished" datetime="2019-11-28T16:41:32+08:00">2019-11-28</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        　
+
+
+<h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>在之前文章讲述过如何在Golang中进行TDD，相信大家也听说过BDD(Behavior Drive Development)， 和TDD仅差第一个单词: 由Test换成Behavior， 这个代表什么？ BDD和TDD看着很类似，都是test case first，然后实现可以通过满足test case的代码，那它和TDD关系如何，区别在哪？在Golang中怎么进行BDD实践呢？我们一一道来。</p>
+<span id="more"></span>
+
+<h2 id="BDD-简介"><a href="#BDD-简介" class="headerlink" title="BDD 简介"></a>BDD 简介</h2><h3 id="BDD-vs-TDD"><a href="#BDD-vs-TDD" class="headerlink" title="BDD vs TDD"></a>BDD vs TDD</h3><p>从它的名字Behavior Drive Development我们可以看出，这是一种指导Development方法，它的作用便是通过BDD，更容易构建出符合我们预期的软件。所谓我们的预期便是一个个的test case，到这里还是感觉和TDD很像，其实不然。</p>
+<p>在TDD中，关注的核心点是function，即认为程序最基本单元是function, 其test case可认为等同与Unit test, TDD与unit test的区别是TDD强调测试和开发结合而成的工作流: 写test case –&gt; 写代码 –&gt; 通过测试，继续写更多测试，下一次循环。</p>
+<p>而BDD相比TDD关注更高层的行为，而不是函数级的行为。也就是在BDD中，不会强调函数的功能正确，太底层了，这是unit test应该做的事情。BDD关注的是user story，即用户在特定场景， 与软件交互发生的行为，这个Behavior指的是高层模块(而非基本单元，函数)的行为。</p>
+<p>如何区分BDD和TDD呢？可以这么理解： <strong>TDD是给程序员的</strong>，用来验证开发者的最基本模块的功能: 在什么输入，应该产生什么输出，保证实现的边界，健全性。而BDD，由于其test case描述的是更高级模块的行为，脱离了具体的实现，容易用自然语言来描述，<strong>BDD是给产品经理的</strong>，告诉他们系统的行为，请看下面的例子。</p>
+<h3 id="BDD示例-购物车系统"><a href="#BDD示例-购物车系统" class="headerlink" title="BDD示例: 购物车系统"></a>BDD示例: 购物车系统</h3><p>我们在实现购物车系统，可以先和产品经理确定其行为，这些精细化的需求可以直接转化为test case: </p>
+<p>初始状态购物车为空(Given)</p>
+<ul>
+<li> 当添加1个商品A时(When)</li>
+</ul>
+<ul>
+<li> 购物车商品列表显示A，个数为1 (Then)</li>
+<li> 购物车商品类型列表显示A</li>
+<li> 购物车总价显示A的价格</li>
+</ul>
+<ul>
+<li> 当添加2个商品A时(When)</li>
+</ul>
+<ul>
+<li> 购物车商品总列表显示A，个数为2 (Then)</li>
+<li> 购物车商品类型列表显示A</li>
+<li> 购物车总价显示A的价格 x 2<br>…</li>
+</ul>
+<p>这里test case完全不涉及怎么实现，怎么实现是程序员的事情， 需要与功能要求解耦。有了test case, 便不太可能出现沟通的理解歧义，同时BDD鼓励程序员实现过程中，不断验证当前实现是否满足约定，直到通过。</p>
+<h3 id="BDD-在测试架构中的位置"><a href="#BDD-在测试架构中的位置" class="headerlink" title="BDD 在测试架构中的位置"></a>BDD 在测试架构中的位置</h3><p>可见BDD测试因为面向更高层的功能，不强调系统边界， 健全性，凭BDD本身无法保证系统的各种问题，因此BDD一般要辅以TDD，即底层用单元测试保证代码/实现的质量，在高层/抽象层确保系统的行为符合预期。我个人倾向金字塔模型，不同种类的测试分层，底层的test case应该最多，越高级/抽象的测试，越少：</p>
+
+
+<p>BDD应处于components一层。</p>
+<h3 id="BDD-更多思考"><a href="#BDD-更多思考" class="headerlink" title="BDD 更多思考"></a>BDD 更多思考</h3><p>摘录一些关于BDD回答[^1]，加深理解: </p>
+<blockquote>
+<p>BDD，不是跟TDD一个层级的，B是说代码的行为，或许比单元测试高那么一点点吧，主要是跟ATDD（接收测试驱动开发）、SBE（实例化需求）等实践一并提及的，因为他们都是对应到传统测试理论里面，高于单元和模块测试，从功能测试、集成到系统、性能等这些高级别测试的范围。所以说，TDD、BDD根本不是一个层面的东西，解决的是不同的问题。但BDD、ATDD、SBE基本上都认为TDD是基础，也即是说，他们主张做BDD、ATDD、SBE必做TDD。但反之则未必。</p>
+</blockquote>
+<blockquote>
+<p>BDD的核心价值是体现在正确的对系统行为进行设计，所以它并非一种行之有效的测试方法。它强调的是系统最终的实现与用户期望的行为是一致的、验证代码实现是否符合设计目标。但是它本身并不强调对系统功能、性能以及边界值等的健全性做保证，无法像完整的测试一样发现系统的各种问题。但BDD倡导的用简洁的自然语言描述系统行为的理念，可以明确的根据设计产生测试，并保障测试用例的质量。</p>
+</blockquote>
+<h3 id="GWT-语法"><a href="#GWT-语法" class="headerlink" title="GWT 语法"></a>GWT 语法</h3><p>BDD的第一步便是约定test case，需要贴近自然语言，方便非开发人员理解。一般采用Give-When-Then的形式来组织test case，称为GWT语法。</p>
+<p>对照前一节提到的购物车test case：Given表示测试初始条件，When表示与系统交互action的发生，Then描述系统的行为(结果)。</p>
+<p>只要对test case达成共识，并用GWT描述，下一步便可以开始BDD实践了。</p>
+<h2 id="BDD-in-golang"><a href="#BDD-in-golang" class="headerlink" title="BDD in golang"></a>BDD in golang</h2><p>在实现时，我们需要将GWT组织test case记录翻译为测试代码，并运行测试，通过一系列的assertion来检查实现是否符合test case的预期。我们当然可以直接通过golang的内置testing来实现，这里我们采用Ginkgo+gomega来组织test case，让我们的测试代码读起来非常接近自然语言。</p>
+<p>为什么要用两者结合呢？ginkgo实现了test case的组织(以便让其读起来像自然语言)，并加入了其他一些便利功能: 初始化，后续处理，异步等等。而Gomega设计的目的便是与ginkgo一起工作，实现易读的assertion(ginkgo中成为match)功能，其官方也提到: </p>
+<blockquote>
+<p>Gomega is ginkgo’s preferred matcher library</p>
+</blockquote>
+<p>后篇blog我们来看如何用Ginkgo和Gomega进行BDD test。</p>
+<p>[^1]: <a target="_blank" rel="noopener" href="https://www.zhihu.com/question/20161970">TDD 与 BDD 仅仅是语言描述上的区别么？</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Golang/" rel="tag"># Golang</a>
+              <a href="/tags/testing/" rel="tag"># testing</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/11/19/go-module-the-theory/" rel="prev" title="初探Go Module: 理论篇">
+                  <i class="fa fa-chevron-left"></i> 初探Go Module: 理论篇
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2020/04/04/error-propagation-in-HTTP-server/" rel="next" title="Golang HTTP server中的error propagation">
+                  Golang HTTP server中的error propagation <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

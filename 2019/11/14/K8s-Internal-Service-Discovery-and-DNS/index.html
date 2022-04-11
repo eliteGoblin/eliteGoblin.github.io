@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="背景我们知道在K8s中，service用来abstract一组pod：意味着当我们想访问一组pod时，只需要直接访问这个service，service会自动帮我们挑选好一个pod，非常方便。   比如我们有一个名叫tiles-app的Service:  1234567-   kind: Service    apiVersion: v1    metadata:      name: app-sv">
+<meta property="og:type" content="article">
+<meta property="og:title" content="K8s服务发现机制及DNS">
+<meta property="og:url" content="https://elitegoblin.github.io/2019/11/14/K8s-Internal-Service-Discovery-and-DNS/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="背景我们知道在K8s中，service用来abstract一组pod：意味着当我们想访问一组pod时，只需要直接访问这个service，service会自动帮我们挑选好一个pod，非常方便。   比如我们有一个名叫tiles-app的Service:  1234567-   kind: Service    apiVersion: v1    metadata:      name: app-sv">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-11-14T10:57:43.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="kubernetes">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2019/11/14/K8s-Internal-Service-Discovery-and-DNS/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2019&#x2F;11&#x2F;14&#x2F;K8s-Internal-Service-Discovery-and-DNS&#x2F;&quot;,&quot;path&quot;:&quot;2019&#x2F;11&#x2F;14&#x2F;K8s-Internal-Service-Discovery-and-DNS&#x2F;&quot;,&quot;title&quot;:&quot;K8s服务发现机制及DNS&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>K8s服务发现机制及DNS | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E4%BA%AB%E7%9B%AE%E6%A0%87"><span class="nav-number">2.</span> <span class="nav-text">分享目标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%90%E6%9E%9C%E6%A3%80%E9%AA%8C"><span class="nav-number">3.</span> <span class="nav-text">成果检验</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Slide"><span class="nav-number">4.</span> <span class="nav-text">Slide</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2019/11/14/K8s-Internal-Service-Discovery-and-DNS/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          K8s服务发现机制及DNS
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-11-14 18:57:43" itemprop="dateCreated datePublished" datetime="2019-11-14T18:57:43+08:00">2019-11-14</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        
+
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>我们知道在K8s中，service用来abstract一组pod：意味着当我们想访问一组pod时，只需要直接访问这个service，service会自动帮我们挑选好一个pod，非常方便。  </p>
+<p>比如我们有一个名叫tiles-app的Service: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">-   kind: Service</span><br><span class="line">    apiVersion: v1</span><br><span class="line">    metadata:</span><br><span class="line">      name: app-svc</span><br><span class="line">    spec:</span><br><span class="line">      selector:</span><br><span class="line">        component: app</span><br></pre></td></tr></table></figure>
+
+<p>在程序中我们可以用service name作为域名访问对应的service</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http:&#x2F;&#x2F;app-svc&#x2F;my&#x2F;path&#x2F;...</span><br></pre></td></tr></table></figure>
+
+<p>Service是K8s的抽象术语，它背后必然是借助经典的Linux/网络技术来实现。理解实现方式能加深我们对K8s系统的了解，而且我们可能也知道在K8s中，有DNS运行，DNS我们很多人对其的认知停留在name到IP地址转换，K8s为什么要用到DNS，这个内部DNS又和我们广域网上的DNS有什么关系呢？</p>
+<p>前段时间在组内做了一次关于K8s内部服务发现及DNS的分享，这里做下简单的总结。</p>
+<span id="more"></span>
+
+<h2 id="分享目标"><a href="#分享目标" class="headerlink" title="分享目标"></a>分享目标</h2><p>理解下列概念:</p>
+<ul>
+<li> K8s采用DNS作为服务发现的方式，app-svc作为domain name，K8s会给我们返回一个IP地址</li>
+<li>Service几种发现模式: ClusterIP, Headless, ExternalName，前两者对应Server-side discovery和client-side discovery。<ul>
+<li> ClusterIP是virtual IP，可以用IP table实现</li>
+<li> Headless类似经典DNS: service name返回一系列不同的IP(Pod的IP)</li>
+</ul>
+</li>
+<li> 利用Dig和Host来调试DNS(镜像可以用 infoblox/dnstools)</li>
+<li>DNS<ul>
+<li> DNS是什么(多角度): server-client, distributed system, DNS tree</li>
+<li> DNS客户端配置解析: /etc/resolv.conf </li>
+<li> 为什么返回的域名最后有个”点”: FQDN</li>
+<li> 了解K8s对DNS的约定: K8s DNS specification</li>
+<li>DNS基本概念<ul>
+<li> Zone</li>
+<li> A record</li>
+<li> CNAME</li>
+<li> Authority(DNS Server)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li> CoreDNS在K8s的基本工作原理: 监听api-server，有新service则将service name及对应的IP插入到CoreDNS记录中，可见K8s是通过古来的DNS技术来实现它炫酷的service discovery。</li>
+<li> CoreDNS配置解析</li>
+</ul>
+<p>以上内容比较多，这也是个把DNS理论和K8s机制串起来的机会，能加深我们对两者的认识。我们学习时应该尽量将孤立的知识点编织成网<a href="%5B%E5%A6%82%E4%BD%95%E9%AB%98%E6%95%88%E5%AD%A6%E4%B9%A0%5D(https://book.douban.com/subject/25783654/)">^1</a></p>
+<h2 id="成果检验"><a href="#成果检验" class="headerlink" title="成果检验"></a>成果检验</h2><p>试着说说一个外部的request如何经过本地DNS cache, DNS server，再从root DNS server递归查询得到远端服务的入口地址(load balancer)，再到如何通过ingress controller，service，最后到达container内部的全过程，如果没什么问题，那恭喜你，你理解了。</p>
+<p>示意图</p>
+
+
+<p>总有一天我会用pyplot/latex画出精致配图的 😅</p>
+<h2 id="Slide"><a href="#Slide" class="headerlink" title="Slide"></a>Slide</h2><p>之前的Slide都可以直接online read，这个不知道怎么了，一直提示有错误，目前只能在本地查看了。。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git clone git@github.com:eliteGoblin&#x2F;talks.git</span><br><span class="line">cd coredns&#x2F;slide&#x2F;</span><br><span class="line">present .</span><br></pre></td></tr></table></figure>
+
+<p>Golang slide的详细方法看下Tony老师的博客吧<a href="%5BGolang%E6%8A%80%E6%9C%AF%E5%B9%BB%E7%81%AF%E7%89%87%E7%9A%84%E6%9F%A5%E7%9C%8B%E6%96%B9%E6%B3%95%5D(https://tonybai.com/2015/08/22/how-to-view-golang-tech-slide/)">^2</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/kubernetes/" rel="tag"># kubernetes</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/10/25/Ports-forwarding-Basic-in-K8s/" rel="prev" title="Ports forwarding Basic in K8s">
+                  <i class="fa fa-chevron-left"></i> Ports forwarding Basic in K8s
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/11/19/go-module-the-theory/" rel="next" title="初探Go Module: 理论篇">
+                  初探Go Module: 理论篇 <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

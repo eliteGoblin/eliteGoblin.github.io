@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Preface在微服务的搭建过程中，时常会听到熔断，降级。什么意思呢？以我们家里用的保险丝为例：其实它是一种circuit breaker，当电流超过阈值时，会断路，家电对电力资源的请求无法被满足，以保护电网安全。在微服务的世界里，由于存在非常多的跨服务调用，当某个繁忙的服务因网络或运行出现异常时，会影响依赖其的服务：经常是开始响应变慢，错误率上升；由于调用者一般都有重试机制，发现超时或者">
+<meta property="og:type" content="article">
+<meta property="og:title" content="building resilient microservice using hystrix-go">
+<meta property="og:url" content="https://elitegoblin.github.io/2018/08/03/building-resilient-service-using-hystrix-go/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Preface在微服务的搭建过程中，时常会听到熔断，降级。什么意思呢？以我们家里用的保险丝为例：其实它是一种circuit breaker，当电流超过阈值时，会断路，家电对电力资源的请求无法被满足，以保护电网安全。在微服务的世界里，由于存在非常多的跨服务调用，当某个繁忙的服务因网络或运行出现异常时，会影响依赖其的服务：经常是开始响应变慢，错误率上升；由于调用者一般都有重试机制，发现超时或者">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-08-03T15:09:35.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="golang">
+<meta property="article:tag" content="hystrix-go">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2018/08/03/building-resilient-service-using-hystrix-go/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2018&#x2F;08&#x2F;03&#x2F;building-resilient-service-using-hystrix-go&#x2F;&quot;,&quot;path&quot;:&quot;2018&#x2F;08&#x2F;03&#x2F;building-resilient-service-using-hystrix-go&#x2F;&quot;,&quot;title&quot;:&quot;building resilient microservice using hystrix-go&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>building resilient microservice using hystrix-go | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#What-is-Hystrix-go"><span class="nav-number">2.</span> <span class="nav-text">What is Hystrix-go</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hello-world-Hystrix-go"><span class="nav-number">3.</span> <span class="nav-text">Hello world Hystrix-go</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hystrix-go-%E9%85%8D%E7%BD%AE"><span class="nav-number">4.</span> <span class="nav-text">Hystrix-go 配置</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#fallback%E9%98%88%E5%80%BC%E9%85%8D%E7%BD%AE"><span class="nav-number">4.1.</span> <span class="nav-text">fallback阈值配置</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%86%94%E6%96%AD%E5%8D%B3%E6%81%A2%E5%A4%8D%E9%98%88%E5%80%BC%E9%85%8D%E7%BD%AE"><span class="nav-number">4.2.</span> <span class="nav-text">熔断即恢复阈值配置</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5-V-S-%E5%BC%82%E6%AD%A5"><span class="nav-number">5.</span> <span class="nav-text">同步 V.S 异步</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Hystrix-go%E6%80%BB%E7%BB%93"><span class="nav-number">6.</span> <span class="nav-text">Hystrix-go总结</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#reference"><span class="nav-number">7.</span> <span class="nav-text">reference</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2018/08/03/building-resilient-service-using-hystrix-go/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          building resilient microservice using hystrix-go
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-08-03 23:09:35" itemprop="dateCreated datePublished" datetime="2018-08-03T23:09:35+08:00">2018-08-03</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <div align="center">
+
+</div>
+
+<h4 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h4><p>在微服务的搭建过程中，时常会听到熔断，降级。什么意思呢？以我们家里用的保险丝为例：其实它是一种circuit breaker，当电流超过阈值时，会断路，家电对电力资源的请求无法被满足，以保护电网安全。在微服务的世界里，由于存在非常多的跨服务调用，当某个繁忙的服务因网络或运行出现异常时，会影响依赖其的服务：经常是开始响应变慢，错误率上升；由于调用者一般都有重试机制，发现超时或者出错会重试几次，进一步加剧了已经出问题节点的负担，使之恶化导致完全停止服务；若调用者不限定timeout, 会因为过长的等待时间影响用户体验;更严重的是，其会积压大量用户请求，耗尽内存，很可能因为一个外部不太重要的服务，而造成关键服务停止，进而引发连锁反应，像雪崩一样，整个微服务系统因此崩溃；这个现象也称之为级联失败。</p>
+<span id="more"></span>
+
+<p>如何解决呢？思路也很简单：借鉴断路器思想：当依赖的服务出现问题时，切断与其联系，期望其能恢复，这就是熔断；当外部服务熔断时，采取一些补偿措施，使得自己接受的整个请求不至于失败：如视频网站个性化推荐系统熔断后，可以转向获取当天最热视频top 10推荐给用户，不至于因为推荐系统超时没有返回，导致整个用户页面显示500错误，这就是服务降级。熔断被归纳为<a target="_blank" rel="noopener" href="https://martinfowler.com/bliki/CircuitBreaker.html">circuit breaker pattern</a>，除了最基本的切断线路，还有自动恢复(circuit close)机制：当预设阈值超出，则将断路器置为open状态，切断与依赖服务关系，所有请求立刻返回失败；过一定时间，若检测到服务恢复，则断路器置为close状态。</p>
+<p>我们接下来讲述如何用Hystrix-go实现服务熔断和降级。</p>
+<h4 id="What-is-Hystrix-go"><a href="#What-is-Hystrix-go" class="headerlink" title="What is Hystrix-go"></a>What is Hystrix-go</h4><p>Hystrix是NetFlix开发，非常popular的避免级联故障的库，用java实现；</p>
+<blockquote>
+<p>In a distributed environment, inevitably some of the many service dependencies will fail. Hystrix is a library that helps you control the interactions between these distributed services by adding latency tolerance and fault tolerance logic. Hystrix does this by isolating points of access between the services, stopping cascading failures across them, and providing fallback options, all of which improve your system’s overall resiliency.</p>
+</blockquote>
+<p>Hystrix-go是由个人开发的轻量模拟Hystrix功能的Golang library，简单，好用。</p>
+<h4 id="Hello-world-Hystrix-go"><a href="#Hello-world-Hystrix-go" class="headerlink" title="Hello world Hystrix-go"></a>Hello world Hystrix-go</h4><p>需要先导入包 </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go get &quot;github.com&#x2F;afex&#x2F;hystrix-go&#x2F;hystrix&quot;</span><br></pre></td></tr></table></figure>
+
+<p>最简单的hystrix-go code:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">hystrix.Go(<span class="string">&quot;command name&quot;</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    <span class="comment">// normal path code</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;, <span class="function"><span class="keyword">func</span><span class="params">(err error)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    <span class="comment">// do this when errors occur </span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>跑起来了，不是么？hystrix.Go有三个参数</p>
+<ul>
+<li> command name为此调用的名字</li>
+<li> hystrix.Go 第一个函数代表正常执行功能</li>
+<li> 第二个函数为fallback，出现错误时自动执行</li>
+</ul>
+<p>这段代码体现了Hystrix-go最核心的功能：为正常执行的功能指定出错时的fallback函数。听起来像降级，但是熔断在哪里？</p>
+<h4 id="Hystrix-go-配置"><a href="#Hystrix-go-配置" class="headerlink" title="Hystrix-go 配置"></a>Hystrix-go 配置</h4><h5 id="fallback阈值配置"><a href="#fallback阈值配置" class="headerlink" title="fallback阈值配置"></a>fallback阈值配置</h5><p>Hystrix-go可以通过下列代码配置：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">hystrix.ConfigureCommand(<span class="string">&quot;unique command name&quot;</span>, hystrix.CommandConfig&#123;</span><br><span class="line">    Timeout:               <span class="number">1000</span>,</span><br><span class="line">    MaxConcurrentRequests: <span class="number">100</span>,</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>这里配置了针对单次请求何种情况会自动调用fallback: </p>
+<ul>
+<li> 请求超过Timeout时间没有响应</li>
+<li> 最大并发超过限定</li>
+</ul>
+<p>意味着单次请求如果超时或者超过并发限制，会直接导致fallback函数调用，产生一次error；  </p>
+<p>如果想定义自己的错误，比如收到500： </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">ch := hystrix.Go(<span class="string">&quot;hello hystrix&quot;</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">  <span class="keyword">if</span> resp.Code == <span class="number">500</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> errors.New(<span class="string">&quot;code 500 got&quot;</span>)         <span class="comment">// 在这里返回错误，fallback会被调用</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;, <span class="function"><span class="keyword">func</span><span class="params">(err error)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    <span class="comment">// do this when errors occur</span></span><br><span class="line">    fmt.Println(<span class="string">&quot;fallback called because &quot;</span>, err)</span><br><span class="line">    <span class="keyword">return</span> fmt.Errorf(<span class="string">&quot;fallback returned error %s&quot;</span>, err)</span><br><span class="line">&#125;)</span><br><span class="line">err := &lt;- ch</span><br><span class="line">fmt.Println(<span class="string">&quot;error got after hystrix.Go: &quot;</span>, err)</span><br></pre></td></tr></table></figure>
+
+<p>产生如下输出:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fallback called because  code 500 got</span><br><span class="line">err before exit fallback failed with &#39;fallback returned error code 500 got&#39;. run error was &#39;code 500 got&#39;</span><br></pre></td></tr></table></figure>
+
+<p>可以看出error传递路径</p>
+<h5 id="熔断即恢复阈值配置"><a href="#熔断即恢复阈值配置" class="headerlink" title="熔断即恢复阈值配置"></a>熔断即恢复阈值配置</h5><p>产生的error频率和下列配置项决定了何时熔断：</p>
+<ul>
+<li> RequestVolumeThreshold</li>
+<li> SleepWindow</li>
+<li> ErrorPercentThreshold</li>
+</ul>
+<p>配置项意义参见代码settings.go：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> (</span><br><span class="line">    <span class="comment">// DefaultTimeout is how long to wait for command to complete, in milliseconds</span></span><br><span class="line">    DefaultTimeout = <span class="number">1000</span></span><br><span class="line">    <span class="comment">// DefaultMaxConcurrent is how many commands of the same type can run at the same time</span></span><br><span class="line">    DefaultMaxConcurrent = <span class="number">10</span></span><br><span class="line">    <span class="comment">// DefaultVolumeThreshold is the minimum number of requests needed before a circuit can be tripped due to health</span></span><br><span class="line">    DefaultVolumeThreshold = <span class="number">20</span></span><br><span class="line">    <span class="comment">// DefaultSleepWindow is how long, in milliseconds, to wait after a circuit opens before testing for recovery</span></span><br><span class="line">    DefaultSleepWindow = <span class="number">5000</span></span><br><span class="line">    <span class="comment">// DefaultErrorPercentThreshold causes circuits to open once the rolling measure of errors exceeds this percent of requests</span></span><br><span class="line">    DefaultErrorPercentThreshold = <span class="number">50</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>当错误率ErrorPercentThreshold达到阈值，即发生熔断；这时所有的请求并不会真正发送，其fallback都是立刻返回，错误原因：circuit open；这时我们可以把降级的逻辑放在fallback函数中执行。SleepWindow和RequestVolumeThreshold定义了断路器如何恢复为closed状态。</p>
+<h4 id="同步-V-S-异步"><a href="#同步-V-S-异步" class="headerlink" title="同步 V.S 异步"></a>同步 V.S 异步</h4><p>hystrix.Go内部是启动goroutine执行请求，返回chan error指示错误信息，调用代码：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">output := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">bool</span>, <span class="number">1</span>)</span><br><span class="line">errors := hystrix.Go(<span class="string">&quot;my_command&quot;</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    <span class="comment">// talk to other services</span></span><br><span class="line">    output &lt;- <span class="literal">true</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;, <span class="literal">nil</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> &#123;</span><br><span class="line"><span class="keyword">case</span> out := &lt;-output:</span><br><span class="line">    <span class="comment">// success</span></span><br><span class="line"><span class="keyword">case</span> err := &lt;-errors:</span><br><span class="line">    <span class="comment">// failure</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>也支持同步调用，一次调用只返回一个错误</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">err := hystrix.Do(<span class="string">&quot;my_command&quot;</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    <span class="comment">// talk to other services</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;, <span class="literal">nil</span>)</span><br></pre></td></tr></table></figure>
+
+<h4 id="Hystrix-go总结"><a href="#Hystrix-go总结" class="headerlink" title="Hystrix-go总结"></a>Hystrix-go总结</h4><ul>
+<li> 避免client过长等待，超出并发限制；同时和自定义错误一起可以触发fallback，熔断机制</li>
+<li> 设定错误超过阈值时断路，避免向运行出问题服务进一步增加其负担</li>
+<li> 抽取出的断路器成为非常有价值的监控点</li>
+<li> 断路器除了自动熔断，恢复；一般还应支持人工干预</li>
+<li> 熔断后的fallback函数实现降级逻辑</li>
+</ul>
+<h4 id="reference"><a href="#reference" class="headerlink" title="reference"></a>reference</h4><p><a target="_blank" rel="noopener" href="https://martinfowler.com/bliki/CircuitBreaker.html">CircuitBreaker</a><br><a target="_blank" rel="noopener" href="https://github.com/Netflix/Hystrix/wiki">Hystrix wiki</a><br><a target="_blank" rel="noopener" href="http://thediscoblog.com/blog/2015/02/07/fault-tolerance-in-go/">Fault Tolerance in Go</a><br><a target="_blank" rel="noopener" href="https://github.com/afex/hystrix-go">afex/hystrix-go</a>  </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/golang/" rel="tag"># golang</a>
+              <a href="/tags/hystrix-go/" rel="tag"># hystrix-go</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2018/06/01/using-protobuf-in-golang/" rel="prev" title="using protobuf in golang">
+                  <i class="fa fa-chevron-left"></i> using protobuf in golang
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/08/05/Is-Golang-pass-by-value-or-pass-by-reference/" rel="next" title="Is Golang pass by value or by reference?">
+                  Is Golang pass by value or by reference? <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

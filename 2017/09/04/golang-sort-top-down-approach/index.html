@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Prefacesort作为一项非常基础的需求，对于编程(尤其后端)重要性不言而喻， 本文由日常sort需求出发，分析了go sort编程原理及各需求的go语言的实现. 本文的目标是介绍go中sort工作原理，同时可以作为go sort速查. 文章来源于作者日常编程总结和go语言sort文档. 但是document形式的文章不太利于理解，因此本文采用了head first的方式，先提出了我们">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Head First Golang Sort">
+<meta property="og:url" content="https://elitegoblin.github.io/2017/09/04/golang-sort-top-down-approach/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Prefacesort作为一项非常基础的需求，对于编程(尤其后端)重要性不言而喻， 本文由日常sort需求出发，分析了go sort编程原理及各需求的go语言的实现. 本文的目标是介绍go中sort工作原理，同时可以作为go sort速查. 文章来源于作者日常编程总结和go语言sort文档. 但是document形式的文章不太利于理解，因此本文采用了head first的方式，先提出了我们">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2017-09-04T11:59:19.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="golang">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2017/09/04/golang-sort-top-down-approach/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2017&#x2F;09&#x2F;04&#x2F;golang-sort-top-down-approach&#x2F;&quot;,&quot;path&quot;:&quot;2017&#x2F;09&#x2F;04&#x2F;golang-sort-top-down-approach&#x2F;&quot;,&quot;title&quot;:&quot;Head First Golang Sort&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Head First Golang Sort | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E7%9A%84sort%E9%9C%80%E6%B1%82"><span class="nav-number">2.</span> <span class="nav-text">常见的sort需求</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#golang-sort%E4%BD%BF%E7%94%A8%E5%8E%9F%E7%90%86"><span class="nav-number">3.</span> <span class="nav-text">golang sort使用原理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#sort%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="nav-number">4.</span> <span class="nav-text">sort最佳实践</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#sort-%E5%86%85%E7%BD%AE%E7%B1%BB%E5%9E%8B%E6%95%B0%E7%BB%84-ints%EF%BC%8Cfloats%EF%BC%8Cstrings"><span class="nav-number">4.1.</span> <span class="nav-text">sort 内置类型数组 ints，floats，strings </span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#sort-struct-slice"><span class="nav-number">4.2.</span> <span class="nav-text">sort struct slice</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#%E6%8C%89%E5%9B%BA%E5%AE%9A%E6%A8%A1%E5%BC%8F%E6%8E%92%E5%BA%8F"><span class="nav-number">4.2.1.</span> <span class="nav-text">按固定模式排序 </span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#%E6%8C%89single-struct-member%E5%8A%A8%E6%80%81%E6%8E%92%E5%BA%8F"><span class="nav-number">4.2.2.</span> <span class="nav-text">按single struct member动态排序 </span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#%E6%8C%89multiple-struct-member%E5%8A%A8%E6%80%81%E6%8E%92%E5%BA%8F"><span class="nav-number">4.2.3.</span> <span class="nav-text">按multiple struct member动态排序 </span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#stable-sort"><span class="nav-number">4.3.</span> <span class="nav-text">stable sort </span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%98%AF-lt-%E8%80%8C%E4%B8%8D%E6%98%AF-lt"><span class="nav-number">5.</span> <span class="nav-text">为什么是 &lt; 而不是 &lt;&#x3D;</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%99%E5%9C%A8%E6%9C%80%E5%90%8E"><span class="nav-number">6.</span> <span class="nav-text">写在最后</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">7.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2017/09/04/golang-sort-top-down-approach/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Head First Golang Sort
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2017-09-04 19:59:19" itemprop="dateCreated datePublished" datetime="2017-09-04T19:59:19+08:00">2017-09-04</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <div align="center">
+
+</div>
+
+<h4 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h4><p>sort作为一项非常基础的需求，对于编程(尤其后端)重要性不言而喻， 本文由日常sort需求出发，分析了go sort编程原理及各需求的go语言的实现. 本文的目标是介绍go中sort工作原理，同时可以作为go sort速查. 文章来源于作者日常编程总结和go语言sort文档. 但是document形式的文章不太利于理解，因此本文采用了head first的方式，先提出了我们最关注的 <strong>如何实现xx功能</strong>，分析go语言的sort支持，给出sort常见需求的最佳实践.</p>
+<span id="more"></span>
+
+<h4 id="常见的sort需求"><a href="#常见的sort需求" class="headerlink" title="常见的sort需求"></a>常见的sort需求</h4><ul>
+<li> 排序ints，floats，strings: <a href="#sort_embedded">升序</a>，<a href="#sort_desc_order">降序</a></li>
+<li>排序struct array<ul>
+<li> <a href="#sort_static">固定pattern排序</a>(即静态:无法运行时修改，修改排序算法需要修改Interface实现)</li>
+<li> <a href="#sort_dynamic">不同的struct member排序(动态)</a></li>
+<li> <a href="#sort_multikeys">多关键字排序(动态)</a></li>
+</ul>
+</li>
+<li> <a href="#sort_stable">stable排序</a></li>
+</ul>
+<p>本文的目标之一便是给出上述问题的go最佳实践</p>
+<h4 id="golang-sort使用原理"><a href="#golang-sort使用原理" class="headerlink" title="golang sort使用原理"></a><a id="sort_basic">golang sort使用原理</a></h4><p>本文描述的golang sort针对slice</p>
+<ul>
+<li> 内置类型int，float的slice: golang sort包内置对其支持: 提供api对其进行升序，降序sort</li>
+<li>struct array的sort: 需要实现Interface，然后调用sort.Sort(&amp;mySortInterface)进行排序，Interface定义：  <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Interface <span class="keyword">interface</span> &#123;</span><br><span class="line">    <span class="comment">// Len is the number of elements in the collection.</span></span><br><span class="line">    Len() <span class="keyword">int</span></span><br><span class="line">    <span class="comment">// Less reports whether the element with</span></span><br><span class="line">    <span class="comment">// index i should sort before the element with index j.</span></span><br><span class="line">    Less(i， j <span class="keyword">int</span>) <span class="keyword">bool</span></span><br><span class="line">    <span class="comment">// Swap swaps the elements with indexes i and j.</span></span><br><span class="line">    Swap(i， j <span class="keyword">int</span>)</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// go基于Interface提供的sort功能</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">IsSorted</span><span class="params">(data Interface)</span> // 判断排序是否满足<span class="title">Less</span>函数</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Sort</span><span class="params">(data Interface)</span>　　　　　// 不稳定排序</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Stable</span><span class="params">(data Interface)</span>   // 稳定排序</span></span><br></pre></td></tr></table></figure>
+  sort.Sort内部主要用quickSort，并调用Interface实现的Less，Swap函数来进行实际的排序.</li>
+</ul>
+<p>以上就是golang sort的原理，很简单吧? 基本上来说，我们可以通过:基于我们的struct slice实现Interface的Len，Swap，Less函数来实现排序的目的.但针对一些复杂的需求:如　<strong>动态改变排序算法</strong>，<strong>多关键字排序</strong>等如何优雅的实现呢？ 本文以Interface来指实现了Less，Swap，Len的interface.</p>
+<h4 id="sort最佳实践"><a href="#sort最佳实践" class="headerlink" title="sort最佳实践"></a>sort最佳实践</h4><h5 id="sort-内置类型数组-ints，floats，strings"><a href="#sort-内置类型数组-ints，floats，strings" class="headerlink" title="sort 内置类型数组 ints，floats，strings "></a>sort 内置类型数组 ints，floats，strings <a id="sort_embedded"></a></h5><p>对一个具体的内置类型，以int数组为例，golang内置对其提供了与Interface类似的一组两个函数: IsSorted，Sort(内置类型不需要stable)</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">IntsAreSorted</span><span class="params">(a []<span class="keyword">int</span>)</span><span class="title">bool</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Ints</span><span class="params">(a []<span class="keyword">int</span>)</span> //</span> </span><br></pre></td></tr></table></figure>
+<p>简单的例子:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">arr := []<span class="keyword">int</span>&#123;<span class="number">2</span>， <span class="number">1</span>， <span class="number">-3</span>， <span class="number">1</span>， <span class="number">0</span>&#125;</span><br><span class="line">sort.Ints(arr)</span><br><span class="line">fmt.Println(arr)</span><br><span class="line"><span class="comment">// 结果 [-3 0 1 1 2]</span></span><br></pre></td></tr></table></figure>
+
+<p>sort包还提供float64，string slice的排序实现</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// float64s</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Float64AreSorted</span><span class="params">(s []<span class="keyword">float64</span>)</span><span class="title">bool</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Float64s</span><span class="params">(s []<span class="keyword">float64</span>)</span></span></span><br><span class="line"><span class="comment">// strings</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">StringsAreSorted</span><span class="params">(a []<span class="keyword">string</span>)</span><span class="title">bool</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Strings</span><span class="params">(a []<span class="keyword">string</span>)</span></span></span><br></pre></td></tr></table></figure>
+
+<p><a id="sort_desc_order"></a><br>升序排列实现了，降序呢?一句话:用sort.Reverse(Interface)来反转Interface的Less函数，之后变和升序一样，调用sort.Sort函数进行排序:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Less returns the opposite of the embedded implementation&#x27;s Less method.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(r reverse)</span> <span class="title">Less</span><span class="params">(i， j <span class="keyword">int</span>)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> r.Interface.Less(j， i)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>降序代码示例</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sort.Sort(sort.Reverse(Interface))</span><br></pre></td></tr></table></figure>
+
+<p>以Ints为例:<br>golang内部实现了sort.IntSlice，其实就是用[]int实现了Interface</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> IntSlice []<span class="keyword">int</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(IntSlice)</span><span class="title">Len</span><span class="params">()</span><span class="title">int</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(IntSlice)</span><span class="title">Less</span><span class="params">(i， j <span class="keyword">int</span>)</span><span class="title">bool</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(IntSlice)</span><span class="title">Swap</span><span class="params">(i， j <span class="keyword">int</span>)</span></span></span><br></pre></td></tr></table></figure>
+<p>示例代码:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">arr := []<span class="keyword">int</span>&#123;<span class="number">2</span>， <span class="number">1</span>， <span class="number">-3</span>， <span class="number">1</span>， <span class="number">0</span>&#125;</span><br><span class="line">sort.Sort(sort.Reverse(sort.IntSlice(arr)))</span><br><span class="line">fmt.Println(arr)</span><br></pre></td></tr></table></figure>
+
+<h5 id="sort-struct-slice"><a href="#sort-struct-slice" class="headerlink" title="sort struct slice"></a>sort struct slice</h5><p>示例数据集说明: 自定义struct，存储个人基本信息: 名字，年龄，体重(kg)，这是一家三口人:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Person <span class="keyword">struct</span>&#123;</span><br><span class="line">    name <span class="keyword">string</span></span><br><span class="line">    age <span class="keyword">int</span></span><br><span class="line">    weight float</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">var</span> people = []Person &#123;</span><br><span class="line">    &#123;<span class="string">&quot;Frank&quot;</span>， <span class="number">30</span>， <span class="number">70.5</span>&#125;，</span><br><span class="line">    &#123;<span class="string">&quot;Lisha&quot;</span>， <span class="number">30</span>， <span class="number">55.6</span>&#125;，</span><br><span class="line">    &#123;<span class="string">&quot;TheBaby&quot;</span>， <span class="number">0</span>， <span class="number">5.3</span>&#125;， </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h6 id="按固定模式排序"><a href="#按固定模式排序" class="headerlink" title="按固定模式排序 "></a>按固定模式排序 <a id="sort_static"></a></h6><p>最常用情形为按照某个member进行排序. 按照之前介绍的<a href="#sort_basic">golang排序原理</a>，基于struct slice实现Interface，即可以实现按单个member的排序</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> PeopleSorter []Person</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ps PeopleSorter)</span><span class="title">Len</span><span class="params">()</span><span class="title">int</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(ps)</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ps PeopleSorter)</span><span class="title">Swap</span><span class="params">(i， j <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">    ps[i]， ps[j] = ps[j]， ps[i]</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ps PeopleSorter)</span><span class="title">Less</span><span class="params">(i， j <span class="keyword">int</span>)</span><span class="title">bool</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> ps[i].name &lt; ps[j].name</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 调用</span></span><br><span class="line">sort.Sort(PeopleSorter(people))</span><br><span class="line">fmt.Println(people)</span><br><span class="line"><span class="comment">// 结果</span></span><br><span class="line">[&#123;Frank <span class="number">30</span> <span class="number">70.5</span>&#125; &#123;Lisha <span class="number">30</span> <span class="number">55.6</span>&#125; &#123;TheBaby <span class="number">0</span> <span class="number">5.3</span>&#125;]</span><br></pre></td></tr></table></figure>
+
+<p>想要multiple key排序，只需要更改Less，如先按照Age，再按照Weight:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">func (ps PeopleSorter)Less(i， j int)bool &#123;</span><br><span class="line">    if ps[i].age &#x3D;&#x3D; ps[j].age &#123;</span><br><span class="line">        return ps[i].weight &lt; ps[j].weight</span><br><span class="line">    &#125;</span><br><span class="line">    return ps[i].age &lt; ps[j].age</span><br><span class="line">&#125;</span><br><span class="line">&#x2F;&#x2F; 结果  [&#123;TheBaby 0 5.3&#125; &#123;Lisha 30 55.6&#125; &#123;Frank 30 70.5&#125;]</span><br></pre></td></tr></table></figure>
+
+<p>但是用此实现方式实现如下功能不可行:</p>
+<ol>
+<li> 同时支持按照Name或Age或Weight排序: 上述实现不能共存于一个Interface</li>
+<li> Person所有member全排列排序，按上面所说的方法就得实现6个Less函数… :sob: </li>
+</ol>
+<p>很自然的解决办法就是在Sort之前，动态传入Less函数，有以下两种模式分别解决1， 2问题</p>
+<h6 id="按single-struct-member动态排序"><a href="#按single-struct-member动态排序" class="headerlink" title="按single struct member动态排序 "></a>按single struct member动态排序 <a id="sort_dynamic"></a></h6><p>目标是实现如下效果：　每次调用可以传入不同的conditions</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Sort(people).By(Age)</span><br><span class="line">Sort(people).By(Weight)</span><br><span class="line">... <span class="comment">// 可以扩展其他condition</span></span><br></pre></td></tr></table></figure>
+
+<p>实现思路:</p>
+<blockquote>
+<p>因为sort.Sort最终实现排序，因此我们需要实现我们自己可以传入Less function的Sort，并在其内部动态构造一个Interface，用其Less接口来调用传入的比较函数， 实现最终排序行为.</p>
+</blockquote>
+<ol>
+<li>接收自己Less函数的Sorter，实现调用内置的by来实现比较 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> PeopleSorter <span class="keyword">struct</span> &#123;</span><br><span class="line">    people []Person</span><br><span class="line">    by <span class="function"><span class="keyword">func</span><span class="params">(a， b *Person)</span><span class="title">bool</span></span></span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ps PeopleSorter)</span><span class="title">Len</span><span class="params">()</span><span class="title">int</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(ps.people)</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ps PeopleSorter)</span><span class="title">Swap</span><span class="params">(i， j <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">    ps.people[i]， ps.people[j] = ps.people[j]， ps.people[i]</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(ps PeopleSorter)</span><span class="title">Less</span><span class="params">(i， j <span class="keyword">int</span>)</span><span class="title">bool</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> ps.by(&amp;ps.people[i]， &amp;ps.people[j])</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>实现外部调用接口，以便可以这么调用 By(Age).Sort(people) <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> By <span class="function"><span class="keyword">func</span><span class="params">(a， b *Person)</span><span class="title">bool</span>的，因为没有带被<span class="title">sort</span>的<span class="title">slice</span></span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(by By)</span><span class="title">Sort</span><span class="params">(people []Person)</span></span> &#123;</span><br><span class="line">    sort.Sort(</span><br><span class="line">        &amp;PeopleSorter&#123;</span><br><span class="line">            people : people，</span><br><span class="line">            by : by，</span><br><span class="line">    &#125;)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+３.  调用演示 <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Age := <span class="function"><span class="keyword">func</span><span class="params">(a， b *Person)</span><span class="title">bool</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> a.age &lt; b.age</span><br><span class="line">&#125;</span><br><span class="line">Name := <span class="function"><span class="keyword">func</span><span class="params">(a， b *Person)</span><span class="title">bool</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> a.name &lt; b.name</span><br><span class="line">&#125;</span><br><span class="line">By(Age).Sort(people)</span><br><span class="line">fmt.Println(people)</span><br><span class="line"><span class="comment">// 结果：　[&#123;TheBaby 0 5.3&#125; &#123;Lisha 30 55.6&#125; &#123;Frank 30 70.5&#125;]</span></span><br><span class="line">By(Name).Sort(people)</span><br><span class="line">fmt.Println(people)</span><br><span class="line"><span class="comment">// 结果: [&#123;Frank 30 70.5&#125; &#123;Lisha 30 55.6&#125; &#123;TheBaby 0 5.3&#125;]</span></span><br></pre></td></tr></table></figure></li>
+</ol>
+<p><strong>注</strong>：　由于需要外部传入比较函数，不能直接传 func (i， j int)bool的，因为没有带被sort的slice;因此需要传入func (a， b *Person)bool， Less实现时再转换一下即可</p>
+<h6 id="按multiple-struct-member动态排序"><a href="#按multiple-struct-member动态排序" class="headerlink" title="按multiple struct member动态排序 "></a>按multiple struct member动态排序 <a id="sort_multikeys"></a></h6><p>目标是实现如下效果：　conditions的次序和数量可以任意指定</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OrderBy(Age， Name， Weight...).Sort(people)</span><br></pre></td></tr></table></figure>
+
+<p>实现思路:</p>
+<blockquote>
+<p>以slice形式接收Less函数作为OrderBy的参数，遍历此函数对象数组。OrderBy传入Less函数，Sort传入待排序struct slice，两者组合成为一个Interface，再调用Interface自己实现的Sort函数来最终调用sort.Sort(sorter)来实现排序</p>
+</blockquote>
+<ol>
+<li>最终排序用的Interface: MultiSorter <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> LessFunc <span class="function"><span class="keyword">func</span> <span class="params">(a， b *Person)</span><span class="title">bool</span></span></span><br><span class="line"><span class="keyword">type</span> MultiPeopleSorter <span class="keyword">struct</span> &#123;</span><br><span class="line">    people []Person     <span class="comment">// 待排序数组</span></span><br><span class="line">    lessAr []LessFunc   <span class="comment">// less函数array</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(pms *MultiPeopleSorter)</span><span class="title">Len</span><span class="params">()</span><span class="title">int</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(pms.people)</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(pms *MultiPeopleSorter)</span><span class="title">Swap</span><span class="params">(i， j <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">    pms.people[i]， pms.people[j] = pms.people[j]， pms.people[i]</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 多关键字排序的核心实现: </span></span><br><span class="line"><span class="comment">//    遍历less函数数组，用当前less比较 a，b</span></span><br><span class="line"><span class="comment">//    若 a != b ，则返回当前less比较结果</span></span><br><span class="line"><span class="comment">//    否则继续比较，若全部less无法判定，则返回false</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(pms *MultiPeopleSorter)</span><span class="title">Less</span><span class="params">(i， j <span class="keyword">int</span>)</span><span class="title">bool</span></span> &#123;</span><br><span class="line">    a， b := &amp;pms.people[i]， &amp;pms.people[j]</span><br><span class="line">    <span class="keyword">for</span> _， less := <span class="keyword">range</span> pms.lessAr &#123;</span><br><span class="line">        <span class="keyword">switch</span> &#123;</span><br><span class="line">        <span class="keyword">case</span> less(a， b):</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">        <span class="keyword">case</span> less(b， a):</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="comment">// continue</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>OrderBy实现: <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 生成Sorter，传入less函数数组</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">OrderBy</span><span class="params">(lessArr ...LessFunc)</span> *<span class="title">MultiPeopleSorter</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> &amp;MultiPeopleSorter&#123;</span><br><span class="line">        lessAr : lessArr，</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>Interface自己Sort实现: <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(pms *MultiPeopleSorter)</span><span class="title">Sort</span><span class="params">(people []Person)</span></span> &#123;</span><br><span class="line">    pms.people = people　<span class="comment">// 传入待排序数组</span></span><br><span class="line">    sort.Sort(pms)      <span class="comment">// 实际排序行为</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>这两个实现思路有点绕，这么理解起来比较容易:</p>
+<ol>
+<li>都是实现如下风格的调用:  <figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">By(xxx).Sort(people)</span><br></pre></td></tr></table></figure></li>
+<li> 最终是为了sort.Sort传入Interface， 之前的所有代码都是为这个目的而做准备</li>
+</ol>
+<h5 id="stable-sort"><a href="#stable-sort" class="headerlink" title="stable sort "></a>stable sort <a id="sort_stable"></a></h5><p>很简单，只要把sort.Sort换成sort.Stable即可。<br>我们都知道： quicksort是不稳定排序，而mergesort是稳定排序，查看go源码:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Sort</span><span class="params">(data Interface)</span></span> &#123;</span><br><span class="line">    ...</span><br><span class="line">    quickSort(data， <span class="number">0</span>， n， maxDepth)</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Stable</span><span class="params">(data Interface)</span></span> &#123;</span><br><span class="line">    ...</span><br><span class="line">        <span class="keyword">if</span> m := a + blockSize; m &lt; n &#123;</span><br><span class="line">            symMerge(data， a， m， n)</span><br><span class="line">        &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="为什么是-lt-而不是-lt"><a href="#为什么是-lt-而不是-lt" class="headerlink" title="为什么是 &lt; 而不是 &lt;="></a>为什么是 &lt; 而不是 &lt;=</h4><p>这个问题的实质是对collection做search时，find函数中判断两个对象<em>equal</em>如何实现：一般可用<strong>相等</strong>和<strong>等价</strong>来实现. 等价实现基于Less函数，当下列条件满足时认为两对象等价:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">!Less(a， b) &amp;&amp; !Less(b， a)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>a不小于b而且b不小于a同时成立则认为两对象等价</p>
+</blockquote>
+<p>出问题的地方在于用<strong>等价</strong>实现，假如Less用&lt;=实现:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Less</span><span class="params">(a， b *Person)</span><span class="title">bool</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> a.age &lt;= b.age</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 下列自身和自身的判断会返回false，即自己和自己不等：</span></span><br><span class="line">!Less(a， a) &amp;&amp; !Less(a， a) </span><br></pre></td></tr></table></figure>
+<p>Less(a， a)会返回true，!Less(a， a)会返回false，false &amp;&amp; false == false， 表明a和a不等价!</p>
+<p>因此推荐在日常写Less函数的时候坚持: &lt;而非&lt;=，可以避免很多麻烦</p>
+<p>关于equal和equivalence，在<em>Effective STL</em>一书的以下两节讲的很清楚，推荐阅读:</p>
+<ul>
+<li> Item 19. Understand the difference between equality and equivalence</li>
+<li> Item 21.Always have comparison functions return false for equal<br>values.</li>
+</ul>
+<h4 id="写在最后"><a href="#写在最后" class="headerlink" title="写在最后"></a>写在最后</h4><p>对比其他语言，golang提供的sort不算最方便，比如最简单的按照某一member对slice排序，需要写不少代码，不像STL中直接可以向collection传入lambda.<br>但本人认为这个其实是因为go不是一门大而全的重型语言，没有泛型的支持， 体现在目前sort接口，更像是go的一个feature而非缺陷。针对日常需求，目前用go还是可以较为便捷的实现。</p>
+<h4 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h4><p><a target="_blank" rel="noopener" href="https://golang.org/pkg/sort/#Interface">Package Sort</a>　　</p>
+<p>Scott Meyers， Effective STL: 50 Specific Ways to Improve Your Use of the Standard Template Library</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/golang/" rel="tag"># golang</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2017/09/01/Solve-one-leetcode-problem-use-DP-and-Greedy/%E4%B8%80%E9%A2%98%E4%B8%A4%E8%A7%A3:%E7%94%A8DP%E5%92%8CGreedy%E8%A7%A3%E5%86%B3%E5%90%8C%E4%B8%80%E4%B8%AAleetcode%E9%97%AE%E9%A2%98/" rel="prev" title="一题两解:一道leetcode问题的DP和Greedy解法">
+                  <i class="fa fa-chevron-left"></i> 一题两解:一道leetcode问题的DP和Greedy解法
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2017/10/19/Introduce-URL-Encode/" rel="next" title="漫谈Url Encode">
+                  漫谈Url Encode <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

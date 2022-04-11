@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="WHYKubernetes可以看作”Object Store”, Object格式: yaml or json, 两者等价.  Kubectl的get命令读取一系列Objects, 并以JSON格式返回. 这些JSON格式往往很大，有复杂的嵌套，常见的需求:    获取Output的subset, 往往deep nested: 某些fields， 而不是全部JSON  Filter out i">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubectl JSON output handling and JQ">
+<meta property="og:url" content="https://elitegoblin.github.io/2021/05/25/Kubectl-JSON-output-handling-and-JQ/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="WHYKubernetes可以看作”Object Store”, Object格式: yaml or json, 两者等价.  Kubectl的get命令读取一系列Objects, 并以JSON格式返回. 这些JSON格式往往很大，有复杂的嵌套，常见的需求:    获取Output的subset, 往往deep nested: 某些fields， 而不是全部JSON  Filter out i">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210527140611.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210526162922.png">
+<meta property="article:published_time" content="2021-05-25T14:17:10.000Z">
+<meta property="article:modified_time" content="2021-05-27T04:06:48.504Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="Kubernetes JQ">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210527140611.png">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2021/05/25/Kubectl-JSON-output-handling-and-JQ/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2021&#x2F;05&#x2F;25&#x2F;Kubectl-JSON-output-handling-and-JQ&#x2F;&quot;,&quot;path&quot;:&quot;2021&#x2F;05&#x2F;25&#x2F;Kubectl-JSON-output-handling-and-JQ&#x2F;&quot;,&quot;title&quot;:&quot;Kubectl JSON output handling and JQ&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Kubectl JSON output handling and JQ | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#WHY"><span class="nav-number">1.</span> <span class="nav-text">WHY</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction-to-JQ"><span class="nav-number">2.</span> <span class="nav-text">Introduction to JQ</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E4%B8%80%E6%AD%A5%E4%BA%86%E8%A7%A3-JQ"><span class="nav-number">3.</span> <span class="nav-text">进一步了解 JQ</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Filters"><span class="nav-number">3.1.</span> <span class="nav-text">Filters</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Types-amp-amp-Values"><span class="nav-number">3.2.</span> <span class="nav-text">Types &amp;&amp; Values</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Built-in-operators-and-functions"><span class="nav-number">4.</span> <span class="nav-text">Built-in operators and functions</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#select-boolean-expression"><span class="nav-number">4.1.</span> <span class="nav-text">select(boolean_expression)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%9B%E5%88%99%E8%BF%90%E7%AE%97"><span class="nav-number">4.2.</span> <span class="nav-text">四则运算</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#keys"><span class="nav-number">4.3.</span> <span class="nav-text">keys</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#map-expr-map-values-expr"><span class="nav-number">4.4.</span> <span class="nav-text">map(expr) map_values(expr)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#filter-by-data-type"><span class="nav-number">4.5.</span> <span class="nav-text">filter by data type</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#any-all"><span class="nav-number">4.6.</span> <span class="nav-text">any all</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#array-operation"><span class="nav-number">4.7.</span> <span class="nav-text">array operation</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#string-operation"><span class="nav-number">4.8.</span> <span class="nav-text">string operation</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#length"><span class="nav-number">4.9.</span> <span class="nav-text">length</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%BB%E8%BE%91%E5%88%A4%E6%96%AD-operator"><span class="nav-number">5.</span> <span class="nav-text">逻辑判断 operator</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Regular-expressions-PCRE"><span class="nav-number">6.</span> <span class="nav-text">Regular expressions (PCRE)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JQ-Output-format"><span class="nav-number">7.</span> <span class="nav-text">JQ Output format</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JQ-JSON-path-Kubectl"><span class="nav-number">8.</span> <span class="nav-text">JQ, JSON path, Kubectl</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8JID-visualize-field-selection"><span class="nav-number">9.</span> <span class="nav-text">用JID visualize field selection</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA"><span class="nav-number">10.</span> <span class="nav-text">结论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ref"><span class="nav-number">11.</span> <span class="nav-text">Ref</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2021/05/25/Kubectl-JSON-output-handling-and-JQ/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Kubectl JSON output handling and JQ
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-05-25 22:17:10" itemprop="dateCreated datePublished" datetime="2021-05-25T22:17:10+08:00">2021-05-25</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-27 12:06:48" itemprop="dateModified" datetime="2021-05-27T12:06:48+08:00">2021-05-27</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <img src="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210527140611.png" alt="20210527140611" style="width:500px"/>
+
+<h2 id="WHY"><a href="#WHY" class="headerlink" title="WHY"></a>WHY</h2><p>Kubernetes可以看作”Object Store”, Object格式: <code>yaml</code> or <code>json</code>, 两者等价. </p>
+<p>Kubectl的<code>get</code>命令读取一系列Objects, 并以JSON格式返回. 这些JSON格式往往很大，有复杂的嵌套，常见的需求: </p>
+<ul>
+<li> 获取Output的subset, 往往deep nested: 某些fields， 而不是全部JSON</li>
+<li> Filter out irrelevant objects by fields: e.g.我们只想返回失败的job</li>
+<li> Sort: sort by creation date, status, etc</li>
+</ul>
+<p>相比每次将JSON当做文本，<code>grep</code>; 我们需要更贴合JSON的方式. </p>
+<p>本质上JSON output是我们的数据源, 我们需要query language, 就像query relational database一样. </p>
+<p>本文介绍用<code>JQ</code>, <code>Jid</code>处理<code>kubectl</code>输出, 应对常见的情景. </p>
+<span id="more"></span>
+
+<p>示例代码在<a target="_blank" rel="noopener" href="https://github.com/eliteGoblin/code_4_blog/kubectl_jq">github</a>下载</p>
+<h2 id="Introduction-to-JQ"><a href="#Introduction-to-JQ" class="headerlink" title="Introduction to JQ"></a>Introduction to JQ</h2><p><code>jq</code>首先是binary tool, 用来query json; 由于强大的query功能，可视为独立的language, 类似<code>awk</code>.</p>
+<p>先看<code>jq</code>提供的基本功能, Demo JSON</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">&#123; <span class="attr">&quot;store&quot;</span>: &#123;</span><br><span class="line">    <span class="attr">&quot;book&quot;</span>: [ </span><br><span class="line">      &#123; <span class="attr">&quot;category&quot;</span>: <span class="string">&quot;reference&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;author&quot;</span>: <span class="string">&quot;Nigel Rees&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;title&quot;</span>: <span class="string">&quot;Sayings of the Century&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;price&quot;</span>: <span class="number">8.95</span></span><br><span class="line">      &#125;,</span><br><span class="line">      &#123; <span class="attr">&quot;category&quot;</span>: <span class="string">&quot;fiction&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;author&quot;</span>: <span class="string">&quot;Evelyn Waugh&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;title&quot;</span>: <span class="string">&quot;Sword of Honour&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;price&quot;</span>: <span class="number">12.99</span></span><br><span class="line">      &#125;,</span><br><span class="line">      &#123; <span class="attr">&quot;category&quot;</span>: <span class="string">&quot;fiction&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;author&quot;</span>: <span class="string">&quot;Herman Melville&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;title&quot;</span>: <span class="string">&quot;Moby Dick&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;isbn&quot;</span>: <span class="string">&quot;0-553-21311-3&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;price&quot;</span>: <span class="number">8.99</span></span><br><span class="line">      &#125;,</span><br><span class="line">      &#123; <span class="attr">&quot;category&quot;</span>: <span class="string">&quot;fiction&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;author&quot;</span>: <span class="string">&quot;J. R. R. Tolkien&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;title&quot;</span>: <span class="string">&quot;The Lord of the Rings&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;isbn&quot;</span>: <span class="string">&quot;0-395-19395-8&quot;</span>,</span><br><span class="line">        <span class="attr">&quot;price&quot;</span>: <span class="number">22.99</span></span><br><span class="line">      &#125;</span><br><span class="line">    ],</span><br><span class="line">    <span class="attr">&quot;bicycle&quot;</span>: &#123;</span><br><span class="line">      <span class="attr">&quot;color&quot;</span>: <span class="string">&quot;red&quot;</span>,</span><br><span class="line">      <span class="attr">&quot;price&quot;</span>: <span class="number">19.95</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># prettify JSON</span></span><br><span class="line">cat example.json | jq .</span><br><span class="line"><span class="comment"># extract fields inside array element</span></span><br><span class="line">cat example.json | jq <span class="string">&#x27;.store.book[1].price&#x27;</span></span><br><span class="line"><span class="comment"># extract field of array, 输出multiple elements</span></span><br><span class="line">cat example.json | jq <span class="string">&#x27;.store.book[].price&#x27;</span></span><br><span class="line"><span class="comment"># array转化为iterator,即等价于用element多次调用, 不同于输出一个JSON array</span></span><br><span class="line">cat example.json | jq <span class="string">&#x27;.store.book | .[]&#x27;</span></span><br><span class="line"><span class="comment"># 构建新的object</span></span><br><span class="line">cat example.json | jq <span class="string">&#x27;.store.book[1] | &#123;bookTitle: .title, bookPrice: .price&#125;&#x27;</span></span><br><span class="line"><span class="comment"># 构建array, 将多个elements, construct为一个array</span></span><br><span class="line">cat example.json | jq <span class="string">&#x27;[.store.book | .[]]&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="https://stedolan.github.io/jq/tutorial/">JQ tutorial</a>也提供了一些例子, 值得一读。</p>
+<h2 id="进一步了解-JQ"><a href="#进一步了解-JQ" class="headerlink" title="进一步了解 JQ"></a>进一步了解 JQ</h2><p>以下主要来自<a target="_blank" rel="noopener" href="https://stedolan.github.io/jq/manual/">JQ Manual</a>  </p>
+<p>以一个具体<code>jq</code> cmd为例: query k8s jobs, 以创建时间排序, filter, 只留下failed jobs, 并reconstruct object.</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">k get <span class="built_in">jobs</span> -o json --sort-by=.metadata.creationTimestamp | jq -r <span class="string">&#x27;.items | .[] | select(.metadata.name | contains(&quot;openworld&quot;)) | select(.status.active != 1) | select(.status.conditions[0].type == &quot;Failed&quot;) | &#123;name: .metadata.name, time: .metadata.creationTimestamp, status: .status&#125;&#x27;</span> </span><br></pre></td></tr></table></figure>
+
+<p>可见<code>jq</code>的query由一系列<code>|</code>组成，类似UNIX的pipe, 连接独立component的input, output. </p>
+<p>每个component, 称为filter, 接收输入，完成输出. 每个filter包含不同的<code>jq</code> built-in operator, 实行不同的转换. </p>
+<p>有些filter会产生multiple output(filter A), 当 pipe <code>filter A</code>的输出到<code>filter B</code>时，会<code>runs the second filter for each element of the array</code>; 即不用explicitly写for-loop, 直接pipe两者即可. </p>
+<p><strong>Every filter has input and output</strong>, 即使常数”123”也是filter: 不管输入是什么，输出”123”. JQ里一切皆filter.</p>
+<h3 id="Filters"><a href="#Filters" class="headerlink" title="Filters"></a>Filters</h3><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">.                   <span class="comment"># 最简单的filter, echo input</span></span><br><span class="line">.foo .foo.bar       <span class="comment"># 等价于 .foo | .bar, object index</span></span><br><span class="line">                    <span class="comment">#   严格形式为.[&quot;foo&quot;], 如果key有特殊字符</span></span><br><span class="line">.[2]                <span class="comment"># array index</span></span><br><span class="line">.[2:5]              <span class="comment"># array slice</span></span><br><span class="line">.[]                 <span class="comment"># array iterator: 将single array转为multiple elements</span></span><br><span class="line">filterA, filterB    <span class="comment"># fan out to 多个filter, combine它们的输出, </span></span><br><span class="line">                    <span class="comment">#   如echo &quot;&#123;&#125;&quot; | jq &#x27;1, 2, 3&#x27;输出3个digit, 3行</span></span><br><span class="line">|                   <span class="comment"># 连接两filter, 特殊的filter</span></span><br><span class="line">(expr)              <span class="comment"># group operators, 视expr为expression</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Types-amp-amp-Values"><a href="#Types-amp-amp-Values" class="headerlink" title="Types &amp;&amp; Values"></a>Types &amp;&amp; Values</h3><blockquote>
+<p>jq supports the same set of datatypes as JSON - numbers, strings, booleans, arrays, objects (which in JSON-speak are hashes with only string keys), and “null”.</p>
+</blockquote>
+<p>针对Type转换的主要有<code>[]</code>: array construction及<code>&#123;&#125;</code>: object construction.</p>
+<p><code>[]</code>将multiple input转化为JSON array, 即single object, 如之前提到的</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat example.json | jq <span class="string">&#x27;[.store.book | .[]]&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p><code>.[]</code>是将array打散为multiple output, 因此<code>[]</code>和<code>.[]</code>为逆过程. </p>
+<p><code>&#123;&#125;</code>reconstruct object: 原始object不能满足需要，我们根据输出，重新构造object, 之前例子: </p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">| &#123;name: .metadata.name, time: .metadata.creationTimestamp, status: .status&#125;</span><br></pre></td></tr></table></figure>
+
+<p>有一个common case: 我们只想获得input object的some fields as new Object, 可以: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;title: .title | author: .author&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以简写为: <code>&#123;title, author&#125;</code></p>
+<p>当我们想递归遍下降历所有的sub objects of input “Big” object: 用: <code>..</code>: </p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat example.json | jq <span class="string">&#x27;.. | .price?&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>此例中，bicycle及book都有price, 我们都列出来; <code>.bar?</code>的<code>?</code>在没有<code>bar</code>index时不至于报错. </p>
+<p><code>jq</code>的基本元素介绍完了, 但实际使用，除了基本原理，了解built-in非常关键，毕竟advance场景, 需要自己实现operator时候不多。</p>
+<h2 id="Built-in-operators-and-functions"><a href="#Built-in-operators-and-functions" class="headerlink" title="Built-in operators and functions"></a>Built-in operators and functions</h2><p>列举一些常用的operator和function, 感觉在做functional programming.</p>
+<h3 id="select-boolean-expression"><a href="#select-boolean-expression" class="headerlink" title="select(boolean_expression)"></a>select(boolean_expression)</h3><p>重要的filter: 一般用来过滤array的elements: </p>
+<p>如果input满足<code>boolean_expression</code>, 原样保留; 否则丢弃</p>
+<p>boolean_expression可以调用input, 结合其他filter: </p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">jq `[1,2,3] | map(select(. &gt;= 2))`</span><br><span class="line">Output: [2, 3]</span><br></pre></td></tr></table></figure>
+
+<p>another example: </p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">jq <span class="string">&#x27;.[] | select(.id == &quot;second&quot;)&#x27;</span></span><br><span class="line">Input	[&#123;<span class="string">&quot;id&quot;</span>: <span class="string">&quot;first&quot;</span>, <span class="string">&quot;val&quot;</span>: 1&#125;, &#123;<span class="string">&quot;id&quot;</span>: <span class="string">&quot;second&quot;</span>, <span class="string">&quot;val&quot;</span>: 2&#125;]</span><br><span class="line">Output	&#123;<span class="string">&quot;id&quot;</span>: <span class="string">&quot;second&quot;</span>, <span class="string">&quot;val&quot;</span>: 2&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="四则运算"><a href="#四则运算" class="headerlink" title="四则运算"></a>四则运算</h3><p><code>+ -</code></p>
+<p>初看起来很简单, 但功能丰富: </p>
+<p><code>a + b</code>连接两个filter, 将输入传递给both <code>a</code>和<code>b</code>; 再将两者输出做”add”:</p>
+<ul>
+<li> Numbers: 直接add</li>
+<li> Arrays:  concat 2 array into 1 bigger array</li>
+<li> Strings: concat, similar as array</li>
+<li> Objects: merge 2 objects, 右边覆盖左边</li>
+</ul>
+<p>同理有<code>-</code>, 但仅支持两边都是<code>numbers</code>或<code>array</code></p>
+<p><code>* / %</code></p>
+<p>一般仅对两个<code>numbers</code>, 也支持<code>array</code>, <code>string</code>和<code>objects</code>, 但效果比较诡异，应该不常用，略过。</p>
+<h3 id="keys"><a href="#keys" class="headerlink" title="keys"></a>keys</h3><p><code>keys, keys_unsorted</code></p>
+<p>要求输入为<code>object</code>, 输出<code>keys</code>为array.</p>
+<p><code>has(key)</code>: </p>
+<ul>
+<li> input: object; output: boolean, 是否含有此key.</li>
+<li> input: array: array是否有此element</li>
+</ul>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">jq <span class="string">&#x27;map(has(&quot;foo&quot;))&#x27;</span></span><br><span class="line">Input	[&#123;<span class="string">&quot;foo&quot;</span>: 42&#125;, &#123;&#125;]</span><br><span class="line">Output	[<span class="literal">true</span>, <span class="literal">false</span>]</span><br></pre></td></tr></table></figure>
+
+<p><code>in</code>: if input key in given object, or array; inversed version of <code>has</code></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">jq <span class="string">&#x27;map(in([0,1]))&#x27;</span></span><br><span class="line">Input	[2, 0]</span><br><span class="line">Output	[<span class="literal">false</span>, <span class="literal">true</span>]</span><br></pre></td></tr></table></figure>
+
+<h3 id="map-expr-map-values-expr"><a href="#map-expr-map-values-expr" class="headerlink" title="map(expr) map_values(expr)"></a>map(expr) map_values(expr)</h3><ul>
+<li> input: array; </li>
+<li> <code>expr</code>: expr or function, 对每个elements或fields应用expr; </li>
+<li> output: 应用<code>expr</code>后的新array</li>
+</ul>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">jq <span class="string">&#x27;map_values(.+1)&#x27;</span></span><br><span class="line">Input	&#123;<span class="string">&quot;a&quot;</span>: 1, <span class="string">&quot;b&quot;</span>: 2, <span class="string">&quot;c&quot;</span>: 3&#125;</span><br><span class="line">Output	&#123;<span class="string">&quot;a&quot;</span>: 2, <span class="string">&quot;b&quot;</span>: 3, <span class="string">&quot;c&quot;</span>: 4&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以传入其他built-in, 例如获取field type.</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">jq <span class="string">&#x27;map(type)&#x27;</span></span><br><span class="line">Input	[0, <span class="literal">false</span>, [], &#123;&#125;, null, <span class="string">&quot;hello&quot;</span>]</span><br><span class="line">Output	[<span class="string">&quot;number&quot;</span>, <span class="string">&quot;boolean&quot;</span>, <span class="string">&quot;array&quot;</span>, <span class="string">&quot;object&quot;</span>, <span class="string">&quot;null&quot;</span>, <span class="string">&quot;string&quot;</span>]</span><br></pre></td></tr></table></figure>
+
+<h3 id="filter-by-data-type"><a href="#filter-by-data-type" class="headerlink" title="filter by data type"></a>filter by data type</h3><p>arrays, objects, iterables, booleans, numbers, normals, finites, strings, nulls, values, scalars</p>
+<blockquote>
+<p>These built-ins select only inputs that are arrays, objects, iterables (arrays or objects), booleans, numbers, normal numbers, finite numbers, strings, null, non-null values, and non-iterables, respectively.</p>
+</blockquote>
+<p>只留下match的type</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">jq <span class="string">&#x27;[].[]|numbers, nulls]&#x27;</span></span><br><span class="line">Input	[[],&#123;&#125;,1,<span class="string">&quot;foo&quot;</span>,null,<span class="literal">true</span>,<span class="literal">false</span>]</span><br><span class="line">Output	[1 null]</span><br></pre></td></tr></table></figure>
+
+<h3 id="any-all"><a href="#any-all" class="headerlink" title="any all"></a>any all</h3><p>input: array of boolean values<br>output: <code>any</code>任意一个true为true; <code>all</code>需要所有为true.</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">jq <span class="string">&#x27;any&#x27;</span></span><br><span class="line">Input	[<span class="literal">true</span>, <span class="literal">false</span>]</span><br><span class="line">Output	<span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="array-operation"><a href="#array-operation" class="headerlink" title="array operation"></a>array operation</h3><ul>
+<li> <code>sort</code>, <code>sort_by(path_expression)</code><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">jq &#39;sort_by(.foo)&#39;</span><br><span class="line">Input	[&#123;&quot;foo&quot;:4, &quot;bar&quot;:10&#125;, &#123;&quot;foo&quot;:3, &quot;bar&quot;:100&#125;, &#123;&quot;foo&quot;:2, &quot;bar&quot;:1&#125;]</span><br><span class="line">Output	[&#123;&quot;foo&quot;:2, &quot;bar&quot;:1&#125;, &#123;&quot;foo&quot;:3, &quot;bar&quot;:100&#125;, &#123;&quot;foo&quot;:4, &quot;bar&quot;:10&#125;]</span><br></pre></td></tr></table></figure></li>
+<li> <code>unique</code>, <code>unique_by</code></li>
+<li> <code>min</code>, <code>max</code>, <code>min_by</code>, <code>max_by</code></li>
+<li> <code>reverse</code></li>
+</ul>
+<h3 id="string-operation"><a href="#string-operation" class="headerlink" title="string operation"></a>string operation</h3><p>一系列的操作: </p>
+<ul>
+<li> <code>contains(s)</code></li>
+<li> <code>index(s)</code>, <code>rindex(s)</code></li>
+<li> <code>inside</code></li>
+<li> <code>startWith(str)</code>, <code>endWith(str)</code></li>
+<li> <code>split</code>, <code>join</code></li>
+</ul>
+<p>String interpolation - <code>\(foo)</code></p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">jq <span class="string">&#x27;&quot;The input was \(.), which is one less than \(.+1)&quot;&#x27;</span></span><br><span class="line">Input	42</span><br><span class="line">Output	<span class="string">&quot;The input was 42, which is one less than 43&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="length"><a href="#length" class="headerlink" title="length"></a>length</h3><p>“length” of values: 支持<code>string</code>, <code>array</code>, <code>object</code></p>
+<h2 id="逻辑判断-operator"><a href="#逻辑判断-operator" class="headerlink" title="逻辑判断 operator"></a>逻辑判断 operator</h2><p>作用一目了然, 返回true or false: </p>
+<ul>
+<li> <code>==, !=</code><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">jq <span class="string">&#x27;.[] == 1&#x27;</span></span><br><span class="line">Input	[1, 1.0, <span class="string">&quot;1&quot;</span>, <span class="string">&quot;banana&quot;</span>]</span><br><span class="line">Output	<span class="literal">true</span></span><br><span class="line">        <span class="literal">true</span></span><br><span class="line">        <span class="literal">false</span></span><br><span class="line">        <span class="literal">false</span></span><br></pre></td></tr></table></figure></li>
+<li> <code>&gt;, &gt;=, &lt;=, &lt;</code></li>
+<li> <code>and</code> <code>or</code> <code>not</code><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">jq <span class="string">&#x27;[true, false | not]&#x27;</span></span><br><span class="line">Input	null</span><br><span class="line">Output	[<span class="literal">false</span>, <span class="literal">true</span>]</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p>Alternative operator: <code>a // b</code>: 若<code>a</code>不是<code>false</code>或<code>null</code>, output<code>a</code>; 否则输出<code>b</code>; 等于是给定”默认值”</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">jq <span class="string">&#x27;.foo // 42&#x27;</span></span><br><span class="line">Input	&#123;&#125;</span><br><span class="line">Output	42</span><br></pre></td></tr></table></figure>
+<p>这些可在<a target="_blank" rel="noopener" href="https://jqplay.org/">jq play</a>上直接看结果.</p>
+<p>在local可以直接<code>jq -n &#39;expr&#39;</code>来测试query</p>
+<h2 id="Regular-expressions-PCRE"><a href="#Regular-expressions-PCRE" class="headerlink" title="Regular expressions (PCRE)"></a>Regular expressions (PCRE)</h2><p><code>jq</code>支持完整的<code>re</code>search: 采用与<code>php, ruby, sublime</code>等相同的<code>re</code> library: <code>Oniguruma</code></p>
+<p>RE操作: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">STRING | FILTER( REGEX )</span><br><span class="line">STRING | FILTER( REGEX; FLAGS )</span><br><span class="line">STRING | FILTER( [REGEX] )</span><br><span class="line">STRING | FILTER( [REGEX, FLAGS] )</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li> STRING为待match string, 作为input</li>
+<li> FILTER is one of: </li>
+</ul>
+<ul>
+<li> match: 找到match, 输出object</li>
+<li> test: Like <code>match</code>, but does not return match objects, only <code>true</code> or <code>false</code></li>
+<li> capture: 保留capture name, 结果存到新object</li>
+</ul>
+<p>FLAGS is a string consisting of one of more of the supported flags:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">g - Global search (find all matches, not just the first)</span><br><span class="line">i - Case insensitive search</span><br><span class="line">m - Multi line mode (&#39;.&#39; will match newlines)</span><br><span class="line">n - Ignore empty matches</span><br><span class="line">p - Both s and m modes are enabled</span><br><span class="line">s - Single line mode (&#39;^&#39; -&gt; &#39;\A&#39;, &#39;$&#39; -&gt; &#39;\Z&#39;)</span><br><span class="line">l - Find longest possible matches</span><br><span class="line">x - Extended regex format (ignore whitespace and comments)</span><br></pre></td></tr></table></figure>
+
+<p>测试一系列的match: </p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">jq <span class="string">&#x27;.[] | test(&quot;a b c # spaces are ignored&quot;; &quot;ix&quot;)&#x27;</span></span><br><span class="line">Input	[<span class="string">&quot;xabcd&quot;</span>, <span class="string">&quot;ABC&quot;</span>]</span><br><span class="line">Output	<span class="literal">true</span></span><br><span class="line"><span class="literal">true</span></span><br></pre></td></tr></table></figure>
+
+<p>可以结合<code>select</code>来正则匹配: <code>select(.metadata.name | test(&quot;test-&quot;))</code></p>
+<h2 id="JQ-Output-format"><a href="#JQ-Output-format" class="headerlink" title="JQ Output format"></a>JQ Output format</h2><p>特殊的<code>filter</code>, 一般在最终输出前做必要的formatting和encoding/decoding, 语法为<code>@foo</code>, 有如下几种: </p>
+<ul>
+<li> <code>@text</code>: 实际调用<code>tostring</code></li>
+<li> <code>@json</code>: serialize to json</li>
+<li> <code>@html</code>: HTML escaping: <code>&lt;&gt;&amp;&#39;&quot;</code> map to <code>&amp;lt;</code>, <code>&amp;gt;</code>, <code>&amp;amp;</code>, <code>&amp;apos;</code>, <code>&amp;quot;</code>.</li>
+<li> <code>@uri</code>: percent-encoding</li>
+<li> <code>@csv</code>, <code>@tsv</code>: input必须为<code>array</code>, 转为<code>csv</code>, <code>tsv</code>格式</li>
+<li> <code>@sh</code>: escape for POSIX shell</li>
+<li> <code>@base64</code>: base64 encode; <code>@base64d</code>: base64 decode</li>
+</ul>
+<h2 id="JQ-JSON-path-Kubectl"><a href="#JQ-JSON-path-Kubectl" class="headerlink" title="JQ, JSON path, Kubectl"></a>JQ, JSON path, Kubectl</h2><p><a target="_blank" rel="noopener" href="https://tools.ietf.org/id/draft-goessner-dispatch-jsonpath-00.html">JSON Path standard</a> 提供了不同于<code>jq</code>的query syntax, 两者的比较见<a target="_blank" rel="noopener" href="https://github.com/stedolan/jq/wiki/For-JSONPath-users">JQ doc: For JSONPath users</a>  </p>
+<p>Kubectl本身支持<code>JSONPath</code>, 见<a target="_blank" rel="noopener" href="https://kubernetes.io/zh/docs/reference/kubectl/jsonpath/">官方doc</a>, 但正如doc所说:  </p>
+<blockquote>
+<p>不支持 JSONPath 正则表达式。如需使用正则表达式进行匹配操作，您可以使用如 jq 之类的工具</p>
+</blockquote>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl get pods -o json | jq -r <span class="string">&#x27;.items[] | select(.metadata.name | test(&quot;test-&quot;)).spec.containers[].image&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="用JID-visualize-field-selection"><a href="#用JID-visualize-field-selection" class="headerlink" title="用JID visualize field selection"></a>用JID visualize field selection</h2><p><code>Jid</code>使用场景: 生成JSON query statement: 一步步的从一个大json中选取deep nested field, 并能autocomplete.</p>
+<p>安装<code>jid</code> tool:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go get -u github.com/simeji/jid/cmd/jid</span><br></pre></td></tr></table></figure>
+
+<p>使用<code>jid</code>非常简单:</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat example.json | jid -q | xclip -selection c</span><br></pre></td></tr></table></figure>
+
+<img src="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210526162922.png" alt="20210526162922" style="width:500px"/>
+
+<p>依次指定field来filter, <code>tab</code>自动补全, 最后pipe到clipboard, <code>ctrl+v</code>或<code>xclip -selection c -o</code>即可得到生成的query: <code>.store.book[1].price</code></p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>我们的主要目标是用query <code>kubectl</code>的<code>json</code> output, 一些建议: </p>
+<ul>
+<li> kubectl使用<code>--sort-by</code>指定排序规则(只能为<code>integer</code>或<code>string</code>)</li>
+<li> 如果JSON结果大，复杂，先用<code>jid</code>获取<code>jq</code>能直接使用的query path</li>
+<li> 将<code>kubectl</code>的输出pipe到<code>jq</code>中，filter, 转换，得到想要的结果</li>
+</ul>
+<h2 id="Ref"><a href="#Ref" class="headerlink" title="Ref"></a>Ref</h2><p><a target="_blank" rel="noopener" href="https://stedolan.github.io/jq/manual/">JQ manual</a><br><a target="_blank" rel="noopener" href="https://gist.github.com/so0k/42313dbb3b547a0f51a547bb968696ba">Kubectl output options</a>  </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Kubernetes-JQ/" rel="tag"># Kubernetes JQ</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/05/24/Config-management-using-Kustomize/" rel="prev" title="Config management using Kustomize">
+                  <i class="fa fa-chevron-left"></i> Config management using Kustomize
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/06/15/Datetime-timezone-and-Python/" rel="next" title="Datetime, timezone and Python">
+                  Datetime, timezone and Python <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

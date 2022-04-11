@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="PrefaceI bet you’ve heard people talking about RPC, gRPC all the time. You may already got questions like: What are they, why we need them in my system? seems like the RESTful API works just fine for">
+<meta property="og:type" content="article">
+<meta property="og:title" content="gRpc beginner guide1: gRpc 101">
+<meta property="og:url" content="https://elitegoblin.github.io/2018/10/03/gRpc-beginner-guide1-gRpc-101/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="PrefaceI bet you’ve heard people talking about RPC, gRPC all the time. You may already got questions like: What are they, why we need them in my system? seems like the RESTful API works just fine for">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-10-03T08:01:05.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="golang gRpc">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2018/10/03/gRpc-beginner-guide1-gRpc-101/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2018&#x2F;10&#x2F;03&#x2F;gRpc-beginner-guide1-gRpc-101&#x2F;&quot;,&quot;path&quot;:&quot;2018&#x2F;10&#x2F;03&#x2F;gRpc-beginner-guide1-gRpc-101&#x2F;&quot;,&quot;title&quot;:&quot;gRpc beginner guide1: gRpc 101&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>gRpc beginner guide1: gRpc 101 | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#What-is-RPC-gRPC"><span class="nav-number">2.</span> <span class="nav-text">What is RPC&#x2F;gRPC</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Why-we-need-gRPC"><span class="nav-number">3.</span> <span class="nav-text">Why we need gRPC</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#How-we-use-gRpc-in-Golang"><span class="nav-number">4.</span> <span class="nav-text">How we use gRpc in Golang</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Setup-protobuf-environment"><span class="nav-number">4.1.</span> <span class="nav-text">Setup protobuf environment</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Download-gRPC-golang-library-code"><span class="nav-number">4.2.</span> <span class="nav-text">Download gRPC golang library code</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Hello-World-Example"><span class="nav-number">4.3.</span> <span class="nav-text">Hello World Example</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Some-Illustration"><span class="nav-number">4.4.</span> <span class="nav-text">Some Illustration</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Make-your-change"><span class="nav-number">4.5.</span> <span class="nav-text">Make your change</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Conclusion"><span class="nav-number">5.</span> <span class="nav-text">Conclusion</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-number">6.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2018/10/03/gRpc-beginner-guide1-gRpc-101/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          gRpc beginner guide1: gRpc 101
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-10-03 16:01:05" itemprop="dateCreated datePublished" datetime="2018-10-03T16:01:05+08:00">2018-10-03</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        
+
+<h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>I bet you’ve heard people talking about RPC, gRPC all the time. You may already got questions like: What are they, why we need them in my system? seems like the RESTful API works just fine for us. How I should implement it, hope will not be too complicated.  </p>
+<p>In this WHAT/WHY/HOW style blog, I am gonna first illustrate some key about RPC/gRPC, and then show how gRPC works by a simple example, hope you enjoy it. </p>
+<span id="more"></span>
+
+<h2 id="What-is-RPC-gRPC"><a href="#What-is-RPC-gRPC" class="headerlink" title="What is RPC/gRPC"></a>What is RPC/gRPC</h2><p>Some of you may know RPC is stand for <em>Remote Procedure Call</em>, it’s a mechanism to communicate between processes, which enable programmer to invoke procedures(functions) reside on remote computer, but code just quite as simple as calling local functions.    </p>
+<p>That make our life much easier, right? Because in our code, we do not need to worry about the network programming details, just call a local object’s method(which is a proxy of remote service, called stub) with some input parameters, and get result back, like calling the local functions!</p>
+<p>What is gRpc anyway? It’s an implementation of RPC mechanism, or we can say it’s an concrete object of RPC class. The initial g may come from Google who invented it.  </p>
+<h2 id="Why-we-need-gRPC"><a href="#Why-we-need-gRPC" class="headerlink" title="Why we need gRPC"></a>Why we need gRPC</h2><p>Why we need RPC?  As discussed, RPC made our day easier because it handles a lot of networking communication details, which make access of remote service just like local function call.  I agree with the metaphore that in a microservice system, each service is indispensable part of human body, RPC is like veins/neural connecting them. </p>
+<p>Why we choose gRPC?  gRPC use <a href="https://elitegoblin.github.io/2018/06/01/using-protobuf-in-golang/">protobuf</a> to transmit data, much faster; And gRPC is quite powerful and versatile: it is built on HTTP/2: so proxies, firewalls and streaming reside in gRPC nature; gRPC integrates seamlessly with ecosystem components like service discovery, name resolver, load balancer, tracing and monitoring. </p>
+<h2 id="How-we-use-gRpc-in-Golang"><a href="#How-we-use-gRpc-in-Golang" class="headerlink" title="How we use gRpc in Golang"></a>How we use gRpc in Golang</h2><h3 id="Setup-protobuf-environment"><a href="#Setup-protobuf-environment" class="headerlink" title="Setup protobuf environment"></a>Setup protobuf environment</h3><p>As I wrote in <a href="https://elitegoblin.github.io/2018/06/01/using-protobuf-in-golang/">here</a>, you need to set up your protobuf environment first, gRPC use protobuf to transfer data</p>
+<p>in summary, you need to:  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># Make sure you grab the latest version</span><br><span class="line">curl -OL https:&#x2F;&#x2F;github.com&#x2F;google&#x2F;protobuf&#x2F;releases&#x2F;download&#x2F;v3.3.0&#x2F;protoc-3.3.0-linux-x86_64.zip</span><br><span class="line"># Unzip</span><br><span class="line">unzip protoc-3.3.0-linux-x86_64.zip -d protoc3</span><br><span class="line"># Move protoc to &#x2F;usr&#x2F;local&#x2F;bin&#x2F;</span><br><span class="line">sudo mv protoc3&#x2F;bin&#x2F;* &#x2F;usr&#x2F;local&#x2F;bin&#x2F;</span><br><span class="line"># Move protoc3&#x2F;include to &#x2F;usr&#x2F;local&#x2F;include&#x2F;</span><br><span class="line">sudo mv protoc3&#x2F;include&#x2F;* &#x2F;usr&#x2F;local&#x2F;include&#x2F;</span><br><span class="line"># Optional: change owner</span><br><span class="line">sudo chown $USER &#x2F;usr&#x2F;local&#x2F;bin&#x2F;protoc</span><br><span class="line">sudo chown -R $USER &#x2F;usr&#x2F;local&#x2F;include&#x2F;google</span><br><span class="line"># Set up your GOBIN and GOPATH env</span><br><span class="line">export GOBIN&#x3D;xxx</span><br><span class="line">export GOPATH&#x3D;xxx</span><br><span class="line"># Install protoc compiler plug-in for golang</span><br><span class="line">go get -u github.com&#x2F;golang&#x2F;protobuf&#x2F;protoc-gen-go</span><br><span class="line"># Put protoc-gen-go in your PATH env</span><br><span class="line">export PATH&#x3D;$PATH:your_path_of_protoc-gen-go</span><br></pre></td></tr></table></figure>
+
+<h3 id="Download-gRPC-golang-library-code"><a href="#Download-gRPC-golang-library-code" class="headerlink" title="Download gRPC golang library code"></a>Download gRPC golang library code</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd $GOPATH</span><br><span class="line">go get google.golang.org&#x2F;grpc</span><br></pre></td></tr></table></figure>
+
+<h3 id="Hello-World-Example"><a href="#Hello-World-Example" class="headerlink" title="Hello World Example"></a>Hello World Example</h3><p>We are gonna work through official’s example which reside in <em>google.golang.org/grpc/examples/helloworld</em>:  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">├── greeter_client</span><br><span class="line">│   └── main.go</span><br><span class="line">├── greeter_server</span><br><span class="line">│   └── main.go</span><br><span class="line">├── helloworld</span><br><span class="line">│   ├── helloworld.pb.go</span><br><span class="line">│   └── helloworld.proto</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li> greeter_client is a rpc client says hello to remote server</li>
+<li> greeter_server is a rpc server receive client’s simple hello request then give response: just a request/reply way of communicating</li>
+<li>in helloworld directory<ul>
+<li> helloworld.proto: rpc protocol definition file, using the proto definition syntanx</li>
+<li> helloworld.pb.go: rpc library used by both RPC server and client </li>
+</ul>
+</li>
+</ul>
+<p>let’s run RPC server first:  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go run greeter_server&#x2F;main.go</span><br></pre></td></tr></table></figure>
+
+<p>then run client which simply say <em>hello</em> to the server:  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go run greeter_client&#x2F;main.go frank</span><br></pre></td></tr></table></figure>
+
+<p>we got:  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2018&#x2F;10&#x2F;03 17:39:36 Greeting: Hello frank</span><br></pre></td></tr></table></figure>
+
+<p>We just succeeded in running our first gRPC app!</p>
+<h3 id="Some-Illustration"><a href="#Some-Illustration" class="headerlink" title="Some Illustration"></a>Some Illustration</h3><p>in helloworld.proto</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">&#x2F;&#x2F; The greeting service definition.</span><br><span class="line">service Greeter &#123;</span><br><span class="line">  &#x2F;&#x2F; Sends a greeting</span><br><span class="line">  rpc SayHello (HelloRequest) returns (HelloReply) &#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; The request message containing the user&#39;s name.</span><br><span class="line">message HelloRequest &#123;</span><br><span class="line">  string name &#x3D; 1;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; The response message containing the greetings</span><br><span class="line">message HelloReply &#123;</span><br><span class="line">  string message &#x3D; 1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>we can see that only difference with pure protobuf definition is we define a service, which use rpc keyword to indicate methods of a given service, actually, we can see gRPC as communicating with remote service which provide a couple of methods to invoke. </p>
+<p>on the client side, what we just need to do is dial and invoke client.SayHello, on server side, we need to implement the Server interface according to what we need:  </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> server <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line"><span class="comment">// SayHello implements helloworld.GreeterServer</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *server)</span> <span class="title">SayHello</span><span class="params">(ctx context.Context, in *pb.HelloRequest)</span> <span class="params">(*pb.HelloReply, error)</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> &amp;pb.HelloReply&#123;Message: <span class="string">&quot;Hello &quot;</span> + in.Name&#125;, <span class="literal">nil</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>and then register it the service:  </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">s := grpc.NewServer()</span><br><span class="line">pb.RegisterGreeterServer(s, &amp;server&#123;&#125;)</span><br><span class="line"><span class="comment">// Register reflection service on gRPC server.</span></span><br><span class="line">reflection.Register(s)</span><br></pre></td></tr></table></figure>
+
+<p>In RPC world, when you want to provide a service on the server, you need to <strong>register</strong> it on server, so clients can find out it by server address and service name</p>
+<h3 id="Make-your-change"><a href="#Make-your-change" class="headerlink" title="Make your change"></a>Make your change</h3><p>The helloworld example works directly because the source we got already has gRpc server/client code generated, let’s try change it a little bit, add another method for Greeter service:  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpc SayHelloAgain(HelloRequest) returns (HelloReply) &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Basicly, it is quite similiar with SayHello, same input and output. We need to regenerate gRpc code:  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd src&#x2F;google.golang.org&#x2F;grpc&#x2F;examples&#x2F;</span><br><span class="line">protoc -I helloworld&#x2F; helloworld&#x2F;helloworld.proto --go_out&#x3D;plugins&#x3D;grpc:helloworld</span><br></pre></td></tr></table></figure>
+
+<p><em>plugins=grpc</em> means use grpc plugin to generate grpc code while processing proto file.</p>
+<p>in greeter_server/main.go, add implementation for SayHelloAgain method: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">func (s *server) SayHelloAgain(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) &#123;</span><br><span class="line">    return &amp;pb.HelloReply&#123;Message: &quot;Hello Again&quot; + in.Name&#125;, nil</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>in greeter_client/main.go, invoke SayHelloAgain: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rAg, errAg :&#x3D; c.SayHelloAgain(ctx, &amp;pb.HelloRequest&#123;Name: name&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>run the server, run client with go run greeter_client/main.go frank, you’ll see the SayHelloAgain method is correctly invoked:  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2018&#x2F;10&#x2F;03 17:39:36 Greeting: Hello frank</span><br><span class="line">2018&#x2F;10&#x2F;03 17:39:36 Greeting Again: Hello Againfrank</span><br></pre></td></tr></table></figure>
+
+<p>the original example could be found <a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/tree/master/examples">here</a></p>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>In this blog we explained what is RPC/gRPC, the reason why we need it: </p>
+<ul>
+<li> Easy to use, programmer do not need to go through a lot of network, data encode/decode details</li>
+<li> Efficient, because it transfers binary data</li>
+<li> Easy to extend, because it is built on HTTP/2</li>
+</ul>
+<p>And we use official’s example to show how gRPC works.  </p>
+<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><p><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Remote_procedure_call">Remote procedure call</a><br><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc/issues/6292">Why gRPC uses Protobuf and HTTP/2 together?</a><br><a target="_blank" rel="noopener" href="https://grpc.io/docs/quickstart/go.html#update-a-grpc-service">Go Quick Start</a><br><a target="_blank" rel="noopener" href="https://grpc.io/docs/guides/">What is gRPC?</a><br><a target="_blank" rel="noopener" href="https://grpc.io/docs/tutorials/basic/go.html#generating-client-and-server-code">gRPC Basics - Go</a>  </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/golang-gRpc/" rel="tag"># golang gRpc</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2018/09/17/Mind-Mapping-of-Book-Ansible-Up-and-Running/" rel="prev" title="Mind Mapping of Book: Ansible Up and Running">
+                  <i class="fa fa-chevron-left"></i> Mind Mapping of Book: Ansible Up and Running
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/10/14/setup-docker-as-VMs/" rel="next" title="setup docker as 'VMs'">
+                  setup docker as 'VMs' <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

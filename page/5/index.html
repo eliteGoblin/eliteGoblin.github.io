@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="拒绝复制,经过思考后的总结才属于自己">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:url" content="https://elitegoblin.github.io/page/5/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="拒绝复制,经过思考后的总结才属于自己">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:author" content="eliteGoblin">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/page/5/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:true,&quot;isPost&quot;:false,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:&quot;&quot;,&quot;permalink&quot;:&quot;&quot;,&quot;path&quot;:&quot;page&#x2F;5&#x2F;index.html&quot;,&quot;title&quot;:&quot;&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-overview-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2018/06/01/using-protobuf-in-golang/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2018/06/01/using-protobuf-in-golang/" class="post-title-link" itemprop="url">using protobuf in golang</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-06-01 11:32:33" itemprop="dateCreated datePublished" datetime="2018-06-01T11:32:33+08:00">2018-06-01</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <div align="center">
+
+</div>
+
+
+<h4 id="Why-What-How"><a href="#Why-What-How" class="headerlink" title="Why, What, How?"></a>Why, What, How?</h4><p>做后端的同学会对protobuf时有耳闻，可能也知道它是一种数据交换结构(标准)，那我们通讯时直接用TCP/UDP或者HTTP传输数据就可以了呗，为什么需要用它呢？本文从介绍protobuf解决什么问题开始，如何搭建开发环境，并以两个简单例子说明数据是如何经由protobuf交换．最后以一个TCP通信的例子综合讲述实际工程中protobuf的使用场景，相信实践完本文提供的例子，读者会对在golang开发中如何使用protobuf有初步认识．  </p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/06/01/using-protobuf-in-golang/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2018/05/18/using-gomock-in-TDD/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2018/05/18/using-gomock-in-TDD/" class="post-title-link" itemprop="url">using gomock in TDD</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-05-18 14:27:20" itemprop="dateCreated datePublished" datetime="2018-05-18T14:27:20+08:00">2018-05-18</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <div align="center">
+
+</div>
+
+<h4 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h4><p>在<a href="https://elitegoblin.github.io/2018/01/31/golang%20TDD%E5%AE%9E%E8%B7%B5/">golang TDD实践</a>一文中我们领略了TDD method的优美与强大．引入TDD可以极大的提升代码的内部质量和设计水平，从而提升我们的自信，减少恐惧．但如果我们的功能代码依赖外部服务结果时该如何测试呢？假如我们的模块依赖数据库读取的数据，那我们在进行TDD时必须先搭建好DB及初始化好数据么？这很多时候会是一个的负担，阻止我们进行TDD．最好能有种机制能根据我们的test case轻量的模拟外部服务行为，这就是TDD里mock object的意义．</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/05/18/using-gomock-in-TDD/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2018/04/23/exploring-Http-request-with-context-in-golang/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2018/04/23/exploring-Http-request-with-context-in-golang/" class="post-title-link" itemprop="url">Exploring param passing With Golang's HTTP Context Support</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-04-23 16:59:39" itemprop="dateCreated datePublished" datetime="2018-04-23T16:59:39+08:00">2018-04-23</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h4 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h4><p>想像如下场景：<br>　　<br>某天，满头大汗的客服同事找到你反馈一个用户详情(PersonDetail)的请求失败了，要求你调查．服务架构如下:  </p>
+　
+
+<p>调用顺序解释:  </p>
+<ol>
+<li> 前端请求通过HTTP到达gateway节点, 目的是获取person_id的PersonDetail, 包括Name,Address,Education信息</li>
+<li> gateway节点需要从Name, Address, Education后端节点分别获取相关信息</li>
+<li> gateway节点将各个后端节点的response整合成为一个json后，传给前端</li>
+</ol>
+<p>在这个过程中，各个后端服务节点都可能出问题导致此次请求失败，该如何查找问题呢？  </p>
+<p>这时如果有一个请求对应的一个uniqueId,用此可以将系统中这个request串起来：无论在哪个后端节点，只要在日志中过滤此uniqueId，就能找到对应日志，从而最终解决问题．  </p>
+<p>以上机制其实是分布式微服务系统的”刚需”，没有这种机制，几乎不可能进行有效的日志排查．　　</p>
+<p>接下来看看我们如何在用golang和HTTP实现的系统中实现上述机制．</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/04/23/exploring-Http-request-with-context-in-golang/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2018/04/11/TCP-connection-reuse-when-HTTP-in-golang/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2018/04/11/TCP-connection-reuse-when-HTTP-in-golang/" class="post-title-link" itemprop="url">TCP connection reuse when HTTP in golang</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-04-11 19:03:59" itemprop="dateCreated datePublished" datetime="2018-04-11T19:03:59+08:00">2018-04-11</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h4 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h4><p>实际工作中会碰到这样的情况：</p>
+<p>面对频繁的HTTP请求，我们应让它们尽量复用底层的TCP连接，而不是每次HTTP都新建TCP连接，有如下好处：</p>
+<ul>
+<li> 减少了每次TCP握手，释放连接的开销</li>
+<li> 如果TCP使用了TLS，会给每次连接建立带来更大的开销(真的很大哟)　　</li>
+</ul>
+<p>那么如何在golang中实现呢？我们首先了解下HTTP关于连接复用的background知识．</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/04/11/TCP-connection-reuse-when-HTTP-in-golang/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2018/02/23/Solve-too-many-open-files-issue/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2018/02/23/Solve-too-many-open-files-issue/" class="post-title-link" itemprop="url">由Too many open files问题看system limit</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-02-23 17:49:00" itemprop="dateCreated datePublished" datetime="2018-02-23T17:49:00+08:00">2018-02-23</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <div align="center">
+
+</div>
+
+<h4 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h4><p>本文的缘起是作者写的golang服务，某天发现日志报错: socket: Too many open files, 定位到出问题的行:  </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> <span class="string">&quot;http&quot;</span></span><br><span class="line">client = &amp;http.Client&#123;</span><br><span class="line">  Transport: tr,</span><br><span class="line">  Timeout:   time.Duration(<span class="number">5</span> * time.Second),</span><br><span class="line">&#125;</span><br><span class="line">response, err := client.Do(req) <span class="comment">// 这里报错!</span></span><br></pre></td></tr></table></figure>
+<p>系统初始化时，会发起约1500余次http请求，看错误提示应该是http client在open socket时打开文件过多，超出系统限制, 但是通过linux命令ulimit将支持最多打开的文件数限制到65535, 仍是会报此错误．为什么限制远大于程序需要仍会发生这种错误? 如何修复这种看似毫无头绪的错误呢? 我们一步一步来.    </p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/02/23/Solve-too-many-open-files-issue/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2018/01/31/golang-TDD-practice/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2018/01/31/golang-TDD-practice/" class="post-title-link" itemprop="url">golang TDD实践</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-01-31 19:27:06" itemprop="dateCreated datePublished" datetime="2018-01-31T19:27:06+08:00">2018-01-31</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h4 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h4><div align="center">
+
+</div>
+
+<p>如果我们每天的工作就是喝着咖啡，嚼着零食，惬意的写写代码，按时回家。对写好的代码充满信心，不需要时刻担心自己的代码线上是否会出问题，不担心局部小小改动会以意想不到的方式引起故障；让别人一提起你都会说：这家伙的代码，No Problem。相信会让我们的人生幸福指数提高不少，然而现实情况却not even close，让人苦恼。<br>TDD(Test Driven Development)在实践中被证明是一种很有效的软件设计/开发方法，它不一定会让我们的梦想全部成真，但起码，带来了希望。</p>
+<p>本文是作者在golang中学习TDD方法的一个总结：首先概括了TDD要素，然后讨论如何用基于golang的testing框架实现基本的TDD，并给出了例子：如何在解决leetcode问题时应用TDD</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/01/31/golang-TDD-practice/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2017/10/19/Introduce-URL-Encode/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2017/10/19/Introduce-URL-Encode/" class="post-title-link" itemprop="url">漫谈Url Encode</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2017-10-19 16:23:01" itemprop="dateCreated datePublished" datetime="2017-10-19T16:23:01+08:00">2017-10-19</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-04 15:13:21" itemprop="dateModified" datetime="2021-05-04T15:13:21+08:00">2021-05-04</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <div align="center">
+
+</div>
+
+<h4 id="什么是Url-Encode以及Why"><a href="#什么是Url-Encode以及Why" class="headerlink" title="什么是Url Encode以及Why"></a>什么是Url Encode以及Why</h4><p>我们日常都要接触各种各样的url，比如我们在京东搜索 <em>氢氟酸</em>，浏览器会生成如下url，请求给京东web服务器:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https:&#x2F;&#x2F;search.jd.com&#x2F;Search?keyword&#x3D;氢氟酸&amp;enc&#x3D;utf-8</span><br></pre></td></tr></table></figure>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2017/10/19/Introduce-URL-Encode/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2017/09/04/golang-sort-top-down-approach/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2017/09/04/golang-sort-top-down-approach/" class="post-title-link" itemprop="url">Head First Golang Sort</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2017-09-04 19:59:19" itemprop="dateCreated datePublished" datetime="2017-09-04T19:59:19+08:00">2017-09-04</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <div align="center">
+
+</div>
+
+<h4 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h4><p>sort作为一项非常基础的需求，对于编程(尤其后端)重要性不言而喻， 本文由日常sort需求出发，分析了go sort编程原理及各需求的go语言的实现. 本文的目标是介绍go中sort工作原理，同时可以作为go sort速查. 文章来源于作者日常编程总结和go语言sort文档. 但是document形式的文章不太利于理解，因此本文采用了head first的方式，先提出了我们最关注的 <strong>如何实现xx功能</strong>，分析go语言的sort支持，给出sort常见需求的最佳实践.</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2017/09/04/golang-sort-top-down-approach/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2017/09/01/Solve-one-leetcode-problem-use-DP-and-Greedy/%E4%B8%80%E9%A2%98%E4%B8%A4%E8%A7%A3:%E7%94%A8DP%E5%92%8CGreedy%E8%A7%A3%E5%86%B3%E5%90%8C%E4%B8%80%E4%B8%AAleetcode%E9%97%AE%E9%A2%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2017/09/01/Solve-one-leetcode-problem-use-DP-and-Greedy/%E4%B8%80%E9%A2%98%E4%B8%A4%E8%A7%A3:%E7%94%A8DP%E5%92%8CGreedy%E8%A7%A3%E5%86%B3%E5%90%8C%E4%B8%80%E4%B8%AAleetcode%E9%97%AE%E9%A2%98/" class="post-title-link" itemprop="url">一题两解:一道leetcode问题的DP和Greedy解法</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2017-09-01 16:12:32" itemprop="dateCreated datePublished" datetime="2017-09-01T16:12:32+08:00">2017-09-01</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <div align="center">
+
+</div>
+
+<h4 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h4><p>DP(Dynamic Programming)和Greedy算法，区别于具体的算法，是algorithm paradigm，可称为算法思想，被用来求Optimization类问题，这类问题用一般方法解决起来颇有难度，而且常常复杂度太高。DP和Greedy会让不熟悉的同学有所畏惧。</p>
+<p>DP和Greedy都需要专题性的练习，本文由一道具体的题引出DP和Greedy解法，读者可以基于这个具体的问题来了解两种算法思想的应用，以及对比两者对于解决同一道题目的不同，加深对两者应用场景的认识</p>
+<h4 id="为什么要学习DP和Greedy"><a href="#为什么要学习DP和Greedy" class="headerlink" title="为什么要学习DP和Greedy?"></a>为什么要学习DP和Greedy?</h4><ul>
+<li> 在技术面试中如果能展示DP和Greedy求最优解一般都会给自己带来加分，这也是本人学习DP和Greedy的直接动力。</li>
+<li> 很多常用算法都采用了DP和Greedy思想，参见<a href="#algo_dp_greedy_algoindex">这里</a>，熟悉DP和Greedy思想更容易理解这类算法</li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2017/09/01/Solve-one-leetcode-problem-use-DP-and-Greedy/%E4%B8%80%E9%A2%98%E4%B8%A4%E8%A7%A3:%E7%94%A8DP%E5%92%8CGreedy%E8%A7%A3%E5%86%B3%E5%90%8C%E4%B8%80%E4%B8%AAleetcode%E9%97%AE%E9%A2%98/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+  <nav class="pagination">
+    <a class="extend prev" rel="prev" href="/page/4/"><i class="fa fa-angle-left" aria-label="上一页"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span>
+  </nav>
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

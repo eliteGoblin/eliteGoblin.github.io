@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Why搭建于k8s的微服务系统，log aggregation更是一项基本需求: pod随时可能在Node见迁移，找不到原始log文件.  K8s官方并没有给出具体logging solution, 只给出了logging architecture   这里介绍一套我们组在用的solution: Fluentd+Graylog, 配置简单(相比EFK), 且提供对应的golang loggin">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Fluentd and Graylog logging solution in k8s">
+<meta property="og:url" content="https://elitegoblin.github.io/2021/05/04/Introduction-to-Fluentd/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Why搭建于k8s的微服务系统，log aggregation更是一项基本需求: pod随时可能在Node见迁移，找不到原始log文件.  K8s官方并没有给出具体logging solution, 只给出了logging architecture   这里介绍一套我们组在用的solution: Fluentd+Graylog, 配置简单(相比EFK), 且提供对应的golang loggin">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210504171645.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210504175255.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210518082921.png">
+<meta property="article:published_time" content="2021-05-04T09:14:21.000Z">
+<meta property="article:modified_time" content="2022-03-30T04:04:45.963Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="logging">
+<meta property="article:tag" content="Fluentd">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210504171645.png">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2021/05/04/Introduction-to-Fluentd/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2021&#x2F;05&#x2F;04&#x2F;Introduction-to-Fluentd&#x2F;&quot;,&quot;path&quot;:&quot;2021&#x2F;05&#x2F;04&#x2F;Introduction-to-Fluentd&#x2F;&quot;,&quot;title&quot;:&quot;Fluentd and Graylog logging solution in k8s&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Fluentd and Graylog logging solution in k8s | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Why"><span class="nav-number">1.</span> <span class="nav-text">Why</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%ACLogging-solution%E7%9A%84high-level-workflow"><span class="nav-number">2.</span> <span class="nav-text">本Logging solution的high level workflow</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Introduction-to-Fluentd"><span class="nav-number">3.</span> <span class="nav-text">Introduction to Fluentd</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#A-Fluentd-event%E2%80%99s-lifecycle"><span class="nav-number">4.</span> <span class="nav-text">A Fluentd event’s lifecycle</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%AC%E5%9C%B0%E6%B5%8B%E8%AF%95%E7%8E%AF%E5%A2%83"><span class="nav-number">4.1.</span> <span class="nav-text">本地测试环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#A-HTTP-event%E2%80%99s-life-cycle"><span class="nav-number">4.2.</span> <span class="nav-text">A HTTP event’s life cycle</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Input-from-log-file"><span class="nav-number">4.3.</span> <span class="nav-text">Input from log file</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Labels-to-jump-in-message-pipeline"><span class="nav-number">4.4.</span> <span class="nav-text">Labels to jump in message pipeline</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Docker-logging-driver"><span class="nav-number">4.5.</span> <span class="nav-text">Docker logging driver</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Send-logs-to-remote-backend"><span class="nav-number">4.6.</span> <span class="nav-text">Send logs to remote backend</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Resource"><span class="nav-number">5.</span> <span class="nav-text">Resource</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2021/05/04/Introduction-to-Fluentd/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Fluentd and Graylog logging solution in k8s
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-05-04 17:14:21" itemprop="dateCreated datePublished" datetime="2021-05-04T17:14:21+08:00">2021-05-04</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2022-03-30 12:04:45" itemprop="dateModified" datetime="2022-03-30T12:04:45+08:00">2022-03-30</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <img src="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210504171645.png" alt="20210504171645" style="width:500px"/>
+
+<h2 id="Why"><a href="#Why" class="headerlink" title="Why"></a>Why</h2><p>搭建于k8s的微服务系统，log aggregation更是一项基本需求: pod随时可能在Node见迁移，找不到原始log文件. </p>
+<p>K8s官方并没有给出具体logging solution, 只给出了<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/concepts/cluster-administration/logging/">logging architecture</a>  </p>
+<p>这里介绍一套我们组在用的solution: Fluentd+Graylog, 配置简单(相比EFK), 且提供对应的golang logging library实现. </p>
+<p>即本文解决问题: 收集golang backend产生的日志，并aggregate到graylog.</p>
+<span id="more"></span>
+
+<h2 id="本Logging-solution的high-level-workflow"><a href="#本Logging-solution的high-level-workflow" class="headerlink" title="本Logging solution的high level workflow"></a>本Logging solution的high level workflow</h2><ol>
+<li> app pod产生日志，由k8s写入node的<code>/var/log/containers</code> folder下</li>
+<li> Fluentd作为daemonset, 运行于k8s cluster, parse log under <code>/var/log/containers</code></li>
+<li> Fluentd获取log作为input，经过内部workflow: filter, match, output, 最终将日志发送给Graylog(通过TCP 协议)</li>
+<li> Graylog 从listen的TCP port, 获取log消息，建立ES索引，并能从Graylog dashboard看到对应logging message.</li>
+</ol>
+<p>本主题将分解为系列博客: </p>
+<ol>
+<li> <a target="_blank" rel="noopener" href="https://blog.franksun.org/2021/05/04/Introduction-to-Fluentd/">Introduction to Fluentd</a>  </li>
+<li> <a target="_blank" rel="noopener" href="https://blog.franksun.org/2021/05/18/Setup-Graylog-in-K8s-and-Istio/">Setup Graylog in K8s and Istio</a>  </li>
+<li> <a target="_blank" rel="noopener" href="https://blog.franksun.org/2021/05/19/Structure-logging-in-Golang/">Structure logging in Golang</a>  </li>
+</ol>
+<p>本文代码测试环境: </p>
+<ul>
+<li> GKE 1.17</li>
+<li> Istio: 1.7</li>
+<li> Fluentd: 1.12.3</li>
+</ul>
+<h2 id="Introduction-to-Fluentd"><a href="#Introduction-to-Fluentd" class="headerlink" title="Introduction to Fluentd"></a>Introduction to Fluentd</h2><img src="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210504175255.png" alt="20210504175255" style="width:500px"/>  
+
+<p>从官方架构图可看出，Fluentd作为适配input(主要是各种logging message), output(多种多样: 各种持久化数据库，monitoring system)的中间件, 提供可定制化的: filter, routing, parse, buffer, format等; 最终实现input, output解耦. </p>
+<p>Fluentd由Ruby实现，生态里包含很多开源<a target="_blank" rel="noopener" href="https://www.fluentd.org/plugins/all">Plugin</a>. </p>
+<p>Fluentd接受到的data, 化为内部的event</p>
+<h2 id="A-Fluentd-event’s-lifecycle"><a href="#A-Fluentd-event’s-lifecycle" class="headerlink" title="A Fluentd event’s lifecycle"></a>A Fluentd event’s lifecycle</h2><h3 id="本地测试环境"><a href="#本地测试环境" class="headerlink" title="本地测试环境"></a>本地测试环境</h3><p><a target="_blank" rel="noopener" href="https://github.com/eliteGoblin/code_4_blog/blob/master/fluentd_graylog/fluentd_1/docker-compose-fluentd-http.yaml">docker-compose-http</a>  </p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&#x27;3.2&#x27;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="comment"># debug network util</span></span><br><span class="line">  <span class="attr">tool:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">praqma/network-multitool</span></span><br><span class="line">    <span class="attr">networks:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">graylog</span></span><br><span class="line">  <span class="attr">fluentd:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">fluent/fluentd:v1.12-1</span></span><br><span class="line">    <span class="attr">volumes:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">./conf:/fluentd/etc/</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;8888:8888&quot;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;24224:24224&quot;</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&quot;24224:24224/udp&quot;</span></span><br><span class="line"><span class="attr">networks:</span></span><br><span class="line">  <span class="attr">graylog:</span></span><br><span class="line">    <span class="attr">driver:</span> <span class="string">bridge</span></span><br></pre></td></tr></table></figure>
+
+<p>Fluentd conf: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;source&gt;</span><br><span class="line">  @type http</span><br><span class="line">  port 8888</span><br><span class="line">  bind 0.0.0.0</span><br><span class="line">&lt;&#x2F;source&gt;</span><br><span class="line"></span><br><span class="line">&lt;match test.cycle&gt;</span><br><span class="line">  @type stdout</span><br><span class="line">&lt;&#x2F;match&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li> 配置HTTP 输入(plugin <code>in_http</code>): 根据不同路径赋予label</li>
+<li> Match label， 并输出到stdout(plugin <code>out_stdout</code>)</li>
+<li> Fluentd将不同Plugins组装成message processing pipeline</li>
+</ul>
+<h3 id="A-HTTP-event’s-life-cycle"><a href="#A-HTTP-event’s-life-cycle" class="headerlink" title="A HTTP event’s life cycle"></a>A HTTP event’s life cycle</h3><p>任何Fluentd的输入都被转化为一系列events， event结构: </p>
+<ul>
+<li> <code>tag</code>: 表明events的origin, 用于后续message routing</li>
+<li> <code>time</code>: event到达的timestamp</li>
+<li> <code>record</code>: actual message payload</li>
+</ul>
+<p>整个lifecycle一般分为如下几步:<br>0.  Setup: config Fluentd, 设置好pipeline</p>
+<ol>
+<li> Input: 配置input plugin, 获取输入; 不同的输入有不同的<code>tag</code></li>
+<li> Filter: filter和rewrite events</li>
+<li> Matches: match label, 并通过output plugin, output</li>
+</ol>
+<p>这里通过HTTP event来阐述life cycle, input一个event via HTTP:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl -i -X POST -d <span class="string">&#x27;json=&#123;&quot;action&quot;:&quot;login&quot;,&quot;user&quot;:2&#125;&#x27;</span> http://localhost:8888/test.cycle</span><br></pre></td></tr></table></figure>
+
+<p>Fluentd输出: </p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fluentd_1  | 2021-05-17 22:47:54.452096657 +0000 test.cycle: &#123;<span class="string">&quot;action&quot;</span>:<span class="string">&quot;login&quot;</span>,<span class="string">&quot;user&quot;</span>:2&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li> tag: test.cycle, from URL path</li>
+<li> <code>record</code>: 实际输入</li>
+</ul>
+<h3 id="Input-from-log-file"><a href="#Input-from-log-file" class="headerlink" title="Input from log file"></a>Input from log file</h3><p><code>sample_log/source_photos.log</code> 几条取自app的json log: </p>
+<p>通过input plugin: <code>in_tail</code>: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;source&gt;</span><br><span class="line">  @type tail</span><br><span class="line">  path &#x2F;var&#x2F;log&#x2F;*.log</span><br><span class="line">  pos_file &#x2F;tmp&#x2F;app.log.pos</span><br><span class="line">  tag api.app.*</span><br><span class="line">  format json</span><br><span class="line">  read_from_head true</span><br><span class="line">&lt;&#x2F;source&gt;</span><br><span class="line"></span><br><span class="line">&lt;match api.app.**&gt;</span><br><span class="line">  @type stdout</span><br><span class="line">&lt;&#x2F;match&gt;</span><br></pre></td></tr></table></figure>
+
+<p>Source为HTTP输入， 并赋予tag: <code>api.app</code>, 同样match此label, 输出到stdout:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">fluentd_1  | 1970-01-01 00:33:41.000000000 +0000 api.app.var.log.source_photos.log: &#123;<span class="string">&quot;elevation&quot;</span>:0,<span class="string">&quot;latitude&quot;</span>:-27.4748854,<span class="string">&quot;longitude&quot;</span>:153.0279261,<span class="string">&quot;message&quot;</span>:<span class="string">&quot;Metadata Request Query Parameters&quot;</span>,<span class="string">&quot;request-id&quot;</span>:<span class="string">&quot;bb5988fe-39df-4dea-b820-acd828368c3c&quot;</span>,<span class="string">&quot;severity&quot;</span>:<span class="string">&quot;info&quot;</span>,<span class="string">&quot;surveyID&quot;</span>:<span class="string">&quot;a8f9130c-b1be-11ea-b13b-f32156d4454a&quot;</span>,<span class="string">&quot;url&quot;</span>:<span class="string">&quot;https://api-qa.nearmapdev.com/photos/v2/surveyresources/100-a8f9130c-b1be-11ea-b13b-f32156d4454a/photos/ground/153.0279261,-27.4748854/metadata.json?apikey=xxx&quot;</span>&#125;</span><br><span class="line">fluentd_1  | 1970-01-01 00:33:41.000000000 +0000 api.app.var.log.source_photos.log: &#123;<span class="string">&quot;message&quot;</span>:<span class="string">&quot;Preview Request Query Parameters&quot;</span>,<span class="string">&quot;request&quot;</span>:&#123;<span class="string">&quot;ID&quot;</span>:<span class="string">&quot;d5a0b536-b1be-11ea-8a8b-bfd11cfa842d&quot;</span>,<span class="string">&quot;SurveyID&quot;</span>:<span class="string">&quot;a8f9130c-b1be-11ea-b13b-f32156d4454a&quot;</span>,<span class="string">&quot;ImageType&quot;</span>:1,<span class="string">&quot;X&quot;</span>:0,<span class="string">&quot;Y&quot;</span>:0,<span class="string">&quot;Z&quot;</span>:0,<span class="string">&quot;Width&quot;</span>:250,<span class="string">&quot;Height&quot;</span>:250,<span class="string">&quot;Background&quot;</span>:&#123;<span class="string">&quot;R&quot;</span>:0,<span class="string">&quot;G&quot;</span>:0,<span class="string">&quot;B&quot;</span>:0,<span class="string">&quot;A&quot;</span>:0&#125;,<span class="string">&quot;Photo&quot;</span>:null,<span class="string">&quot;SkipExistingPreviews&quot;</span>:<span class="literal">false</span>,<span class="string">&quot;GenerationID&quot;</span>:<span class="string">&quot;&quot;</span>&#125;,<span class="string">&quot;request-id&quot;</span>:<span class="string">&quot;4bb710e8-1fb6-4a89-9c01-9458608853c0&quot;</span>,<span class="string">&quot;severity&quot;</span>:<span class="string">&quot;info&quot;</span>,<span class="string">&quot;url&quot;</span>:<span class="string">&quot;https://api-qa.nearmapdev.com/photos/v2/surveyresources/100-a8f9130c-b1be-11ea-b13b-f32156d4454a/photos/d5a0b536-b1be-11ea-8a8b-bfd11cfa842d/preview/250x250.jpg?apikey=xxx&quot;</span>&#125;</span><br><span class="line">fluentd_1  | 1970-01-01 00:33:41.000000000 +0000 api.app.var.log.source_photos.log: &#123;<span class="string">&quot;error&quot;</span>:<span class="string">&quot;Failed to SET redis value: context canceled&quot;</span>,<span class="string">&quot;message&quot;</span>:<span class="string">&quot;Failed to add value to cache&quot;</span>,<span class="string">&quot;request-id&quot;</span>:<span class="string">&quot;ce7513cf-aafe-4825-b174-cfb3216ad144&quot;</span>,<span class="string">&quot;severity&quot;</span>:<span class="string">&quot;error&quot;</span>,<span class="string">&quot;url&quot;</span>:<span class="string">&quot;https://api-qa.nearmapdev.com/photos/v2/surveyresources/100-a294c788-f986-11e7-82f2-67f998099448/photos/70fba45c-f987-11e7-aacc-9be7b8095f12/0/0/0/512x512.jpg?apiKEY=xxx&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Labels-to-jump-in-message-pipeline"><a href="#Labels-to-jump-in-message-pipeline" class="headerlink" title="Labels to jump in message pipeline"></a>Labels to jump in message pipeline</h3><p>一般message会根据top-down依次走完config定义好的各步骤, 如果想”跳跃”pipeline, 需要Fluentd的<code>labels</code>机制. </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">&lt;source&gt;</span><br><span class="line">  @type http</span><br><span class="line">  bind 0.0.0.0</span><br><span class="line">  port 8888</span><br><span class="line">  @label @STAGING</span><br><span class="line">&lt;&#x2F;source&gt;</span><br><span class="line"></span><br><span class="line">&lt;filter test.cycle&gt;</span><br><span class="line">  @type grep</span><br><span class="line">  &lt;exclude&gt;</span><br><span class="line">    key action</span><br><span class="line">    pattern ^login$</span><br><span class="line">  &lt;&#x2F;exclude&gt;</span><br><span class="line">&lt;&#x2F;filter&gt;</span><br><span class="line"></span><br><span class="line">&lt;label @STAGING&gt;</span><br><span class="line">  &lt;filter test.cycle&gt;</span><br><span class="line">    @type grep</span><br><span class="line">    &lt;exclude&gt;</span><br><span class="line">      key action</span><br><span class="line">      pattern ^logout$</span><br><span class="line">    &lt;&#x2F;exclude&gt;</span><br><span class="line">  &lt;&#x2F;filter&gt;</span><br><span class="line"></span><br><span class="line">  &lt;match test.cycle&gt;</span><br><span class="line">    @type stdout</span><br><span class="line">  &lt;&#x2F;match&gt;</span><br><span class="line">&lt;&#x2F;label&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li> 在Source中指定label</li>
+<li> Source完毕直达label section, 跳过filter步骤</li>
+</ul>
+<img src="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20210518082921.png" alt="20210518082921" style="width:500px"/> 
+
+
+<p>可用<a target="_blank" rel="noopener" href="https://config.calyptia.com/#/visualizer">calyptia</a>来visualize Fluentd/FluentBit’s config</p>
+<h3 id="Docker-logging-driver"><a href="#Docker-logging-driver" class="headerlink" title="Docker logging driver"></a>Docker logging driver</h3><p>Application容器化之后，程序输出到stdout, stderr的内容会被docker logging driver捕获并处理. 假设fluentd container name为<code>fluentd_1_fluentd_1</code></p>
+<p><code>docker logs fluentd_1_fluentd_1</code>, 同样可以看到输出到stdout的logs, 参见<a target="_blank" rel="noopener" href="https://docs.docker.com/config/containers/logging/">View logs for a container or service</a>  </p>
+<p>Docker logging driver支持多种模式， 见<a target="_blank" rel="noopener" href="https://docs.docker.com/config/containers/logging/configure/">Configure logging drivers</a></p>
+<p>Kubernetes下，一般默认config为<a target="_blank" rel="noopener" href="https://docs.docker.com/config/containers/logging/json-file/">json-file</a>, 即docker logging driver捕获STDOUT, STDERR输入，写入到json文件: </p>
+<ul>
+<li><p> One line per log, 默认不支持multiline log</p>
+</li>
+<li><p> Json file logging driver写入format会对捕获的message进一步封装: 无论log的格式是什么，将其作为string, 每行转化为一个json, 包含3 fields: <code>log</code>, <code>stream</code>, <code>time</code>.</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;log&quot;</span>: <span class="string">&quot;Log line is here\n&quot;</span>,</span><br><span class="line">  <span class="string">&quot;stream&quot;</span>: <span class="string">&quot;stdout&quot;</span>,</span><br><span class="line">  <span class="string">&quot;time&quot;</span>: <span class="string">&quot;2019-01-01T11:11:11.111111111Z&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p> <code>json-file</code>并不指期待输入的log format为json, 而是将每行内容转化为json</p>
+</li>
+<li><p> <code>docker info --format &#39;&#123;&#123;.LoggingDriver&#125;&#125;&#39;</code>用来查看docker配置的logging driver.</p>
+</li>
+</ul>
+<h3 id="Send-logs-to-remote-backend"><a href="#Send-logs-to-remote-backend" class="headerlink" title="Send logs to remote backend"></a>Send logs to remote backend</h3><p>Fluentd作为logging的关键一环，最终目的是将log发送给remote logging backend, 常见的有: </p>
+<ul>
+<li> EFK stack(Elasticsearch + Fluentd + Kibana): Fluentd发送给Elastic Search, Kibana作为UI.</li>
+<li> Graylog: 本身提供UI, 后端采用ES及mongodb.</li>
+</ul>
+<p>官方文档提供了将Log直接送到EFK的container, 见<a target="_blank" rel="noopener" href="https://docs.fluentd.org/container-deployment/docker-compose">这里</a></p>
+<h2 id="Resource"><a href="#Resource" class="headerlink" title="Resource"></a>Resource</h2><p><a target="_blank" rel="noopener" href="https://docs.fluentd.org/container-deployment/kubernetes">deployment on k8s</a><br><a target="_blank" rel="noopener" href="https://github.com/fluent/fluentd-kubernetes-daemonset">fluentd-kubernetes-daemonset</a><br><a target="_blank" rel="noopener" href="https://github.com/fluent/fluentd-kubernetes-daemonset/blob/master/docker-image/v1.12/debian-graylog/Dockerfile">建好的Graylog docker</a>  </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/logging/" rel="tag"># logging</a>
+              <a href="/tags/Fluentd/" rel="tag"># Fluentd</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2020/04/23/Learn-more-study-less/" rel="prev" title="Learn more, study less">
+                  <i class="fa fa-chevron-left"></i> Learn more, study less
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/05/18/Setup-Graylog-in-K8s-and-Istio/" rel="next" title="Setup Graylog in K8s and Istio">
+                  Setup Graylog in K8s and Istio <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

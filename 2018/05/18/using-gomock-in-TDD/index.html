@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Preface在golang TDD实践一文中我们领略了TDD method的优美与强大．引入TDD可以极大的提升代码的内部质量和设计水平，从而提升我们的自信，减少恐惧．但如果我们的功能代码依赖外部服务结果时该如何测试呢？假如我们的模块依赖数据库读取的数据，那我们在进行TDD时必须先搭建好DB及初始化好数据么？这很多时候会是一个的负担，阻止我们进行TDD．最好能有种机制能根据我们的test">
+<meta property="og:type" content="article">
+<meta property="og:title" content="using gomock in TDD">
+<meta property="og:url" content="https://elitegoblin.github.io/2018/05/18/using-gomock-in-TDD/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Preface在golang TDD实践一文中我们领略了TDD method的优美与强大．引入TDD可以极大的提升代码的内部质量和设计水平，从而提升我们的自信，减少恐惧．但如果我们的功能代码依赖外部服务结果时该如何测试呢？假如我们的模块依赖数据库读取的数据，那我们在进行TDD时必须先搭建好DB及初始化好数据么？这很多时候会是一个的负担，阻止我们进行TDD．最好能有种机制能根据我们的test">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-05-18T06:27:20.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="golang">
+<meta property="article:tag" content="TDD">
+<meta property="article:tag" content="gomock">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2018/05/18/using-gomock-in-TDD/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2018&#x2F;05&#x2F;18&#x2F;using-gomock-in-TDD&#x2F;&quot;,&quot;path&quot;:&quot;2018&#x2F;05&#x2F;18&#x2F;using-gomock-in-TDD&#x2F;&quot;,&quot;title&quot;:&quot;using gomock in TDD&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>using gomock in TDD | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#mock%E6%9C%BA%E5%88%B6%E5%8F%8Agomock%E7%AE%80%E4%BB%8B"><span class="nav-number">2.</span> <span class="nav-text">mock机制及gomock简介</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#mock%E6%9C%BA%E5%88%B6"><span class="nav-number">2.1.</span> <span class="nav-text">mock机制</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#gomock-basic"><span class="nav-number">2.2.</span> <span class="nav-text">gomock basic</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#install-gomock"><span class="nav-number">2.3.</span> <span class="nav-text">install gomock</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#mock-a-redis-server"><span class="nav-number">3.</span> <span class="nav-text">mock a redis-server</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#sample%E5%B7%A5%E7%A8%8B%E4%BB%8B%E7%BB%8D"><span class="nav-number">3.1.</span> <span class="nav-text">sample工程介绍</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#basic-case-using-mock-object"><span class="nav-number">3.2.</span> <span class="nav-text">basic case using mock object</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#mock-order"><span class="nav-number">3.3.</span> <span class="nav-text">mock order</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#mock-type-match"><span class="nav-number">3.4.</span> <span class="nav-text">mock type match</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E9%AB%98%E7%BA%A7%E7%89%B9%E6%80%A7"><span class="nav-number">3.5.</span> <span class="nav-text">其他高级特性</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#conclusion"><span class="nav-number">4.</span> <span class="nav-text">conclusion</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#reference"><span class="nav-number">5.</span> <span class="nav-text">reference</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2018/05/18/using-gomock-in-TDD/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          using gomock in TDD
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-05-18 14:27:20" itemprop="dateCreated datePublished" datetime="2018-05-18T14:27:20+08:00">2018-05-18</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <div align="center">
+
+</div>
+
+<h4 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h4><p>在<a href="https://elitegoblin.github.io/2018/01/31/golang%20TDD%E5%AE%9E%E8%B7%B5/">golang TDD实践</a>一文中我们领略了TDD method的优美与强大．引入TDD可以极大的提升代码的内部质量和设计水平，从而提升我们的自信，减少恐惧．但如果我们的功能代码依赖外部服务结果时该如何测试呢？假如我们的模块依赖数据库读取的数据，那我们在进行TDD时必须先搭建好DB及初始化好数据么？这很多时候会是一个的负担，阻止我们进行TDD．最好能有种机制能根据我们的test case轻量的模拟外部服务行为，这就是TDD里mock object的意义．</p>
+<span id="more"></span>
+
+<h4 id="mock机制及gomock简介"><a href="#mock机制及gomock简介" class="headerlink" title="mock机制及gomock简介"></a>mock机制及gomock简介</h4><h5 id="mock机制"><a href="#mock机制" class="headerlink" title="mock机制"></a>mock机制</h5><p>我们所做的一切目的都是测试我们自己代码逻辑，例如代码依赖数据库返回的数据时，可以用mock机制来方便的为test case生成其依赖的测试数据.  </p>
+<p>如何mock外部服务呢？关键在于将外部服务建模成为object, 将其public method抽象成为interface, 从而能decouple我们的代码和外部服务;这样就能用mock object来代替真的外部服务object,从而测试我们代码正确性.  </p>
+<p><strong>mock object是interface和测试数据的二合一：</strong> 经过interface的decouple,我们的代码变为依赖interface的output，我们create mock object的过程，其实就是建立test case的过程，指定test case的input及output, 供测试框架的测试代码调用．</p>
+<h5 id="gomock-basic"><a href="#gomock-basic" class="headerlink" title="gomock basic"></a>gomock basic</h5><p><a target="_blank" rel="noopener" href="https://github.com/golang/mock">gomock</a>是golang自带的mock framework，那它具体如何使用呢？大致步骤:  </p>
+<ul>
+<li> 前提: install gomock</li>
+<li> 代码抽象外部依赖服务为interface, 放入单独文件如service_handler.go</li>
+<li> 用安装好的mockgen程序， 传入service_handler.go, 根据interface生成mock obj的实现，如service_mock.go</li>
+<li> 利用mock object代码编写unit test function, <strong>在每个test case</strong>设置好mock object的<em>input –&gt; output</em> 对，作为测试case, 并将设置好的mock object嵌入自己代码</li>
+<li> 运行测试，利用mock object的预先配置好的输入和输出，检查自己的程序时候符合预期．</li>
+</ul>
+<h5 id="install-gomock"><a href="#install-gomock" class="headerlink" title="install gomock"></a>install gomock</h5><p>gomock分为两部分:  </p>
+<ul>
+<li>golang library code: gomock library  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> <span class="built_in">set</span> GOPATH to folder <span class="built_in">which</span> contains src, pkg, bin...</span></span><br><span class="line">export GOPATH=...</span><br><span class="line">go get github.com/golang/mock/gomock</span><br></pre></td></tr></table></figure></li>
+<li>gomock generator : 安装mockgen程序，根据代码的interface生成mock object的代码(类似protobuf自动生成代码过程)  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 在前一步GOPATH和go get完成的基础上</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> go install基于gomock library代码</span></span><br><span class="line">go install github.com/golang/mock/mockgen</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="mock-a-redis-server"><a href="#mock-a-redis-server" class="headerlink" title="mock a redis-server"></a>mock a redis-server</h4><p>我们以一个例子来介绍如何使用gomock：　　</p>
+<p>我们演示代码依赖以存储于Redis的数据(personId，personName)对，均为普通string.<br>如果我们想测试，需要mock redis(确切的说是mock redis client的interface，通过此interface获取redis-server上的数据)，完整的代码见<a target="_blank" rel="noopener" href="https://github.com/eliteGoblin/Notes/tree/master/cs/Languages/go/gomock/src/frank">这里</a></p>
+<h5 id="sample工程介绍"><a href="#sample工程介绍" class="headerlink" title="sample工程介绍"></a>sample工程介绍</h5><p>作用：实现简单的调用redis interface，获取value，并打印</p>
+<ul>
+<li> project目录结构<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">./src/frank/</span><br><span class="line">├── main.go</span><br><span class="line">├── redis_helper</span><br><span class="line">│   └── redis_helper.go       # redis interface</span><br><span class="line">├── redis_helper_mock</span><br><span class="line">│   └── redis_helper_mock.go  # mockgen生成的mock object代码，实现了interface</span><br><span class="line">└── report</span><br><span class="line">    ├── gen_report.go         # 调用interface的业务代码:打印redis value</span><br><span class="line">    └── gen_report_test.go    # 在此用mock object实现测试代码</span><br></pre></td></tr></table></figure></li>
+<li> redis interface定义<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> redis_helper</span><br><span class="line"><span class="comment">// 待mock的interface</span></span><br><span class="line"><span class="keyword">type</span> RedisHelper <span class="keyword">interface</span> &#123;</span><br><span class="line">    ConnectToRedisServer(connStr <span class="keyword">string</span>) error <span class="comment">// 连接至redisServer</span></span><br><span class="line">    GetKey(keyName <span class="keyword">string</span>) (<span class="keyword">string</span>, error)     <span class="comment">// 获取key value</span></span><br><span class="line">    SetKey(keyName <span class="keyword">string</span>) error               <span class="comment">// set key by keyName</span></span><br><span class="line">    GetPersonsNameMatchPrefix(keyPrefixName <span class="keyword">string</span>) ([]<span class="keyword">string</span>, error) <span class="comment">// prefix匹配所有person name</span></span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure></li>
+<li>  用户代码嵌入实现interface的object，因此可以将实际访问redis的object替换为mock object. </li>
+</ul>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Reporter <span class="keyword">struct</span> &#123;</span><br><span class="line">    redisHelper redis_helper.RedisHelper</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(selfPtr *Reporter)</span><span class="title">ShowPersonName</span><span class="params">(personId <span class="keyword">string</span>)</span> <span class="params">(personName <span class="keyword">string</span>, err error)</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> selfPtr.redisHelper.GetKey(personId)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li> 如下命令生成mock object的RedisHelper interface代码，输出到redis_helper_mock.go</li>
+</ul>
+<blockquote>
+<p>mockgen -destination=redis_helper_mock/redis_helper_mock.go -package=redis_helper_mock frank/redis_helper RedisHelper </p>
+</blockquote>
+<ul>
+<li> destination: 输出文件</li>
+<li> package: 生成mock代码的package</li>
+<li> frank/redis_helper: interface所在目录</li>
+<li> RedisHelper: 待mock的interface的name，一般希望不同interface存放在不同mock文件中，每次指定一个interface来mock</li>
+</ul>
+<p>我们的<strong>最终目的</strong>就是做到不依赖redis服务而编写ShowPersonName的单元测试代码</p>
+<h5 id="basic-case-using-mock-object"><a href="#basic-case-using-mock-object" class="headerlink" title="basic case using mock object"></a>basic case using mock object</h5><p>gen_report_test.go</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">TestShowPersonName</span><span class="params">(t *testing.T)</span></span> &#123;</span><br><span class="line">    mockCtrl := gomock.NewController(t) </span><br><span class="line">    <span class="keyword">defer</span> mockCtrl.Finish()</span><br><span class="line">    mockRedisHelper := redis_helper_mock.NewMockRedisHelper(mockCtrl)</span><br><span class="line">    mockRedisHelper.EXPECT().GetKey(<span class="string">&quot;person_1&quot;</span>).Return(<span class="string">&quot;frank&quot;</span>, <span class="literal">nil</span>)</span><br><span class="line"></span><br><span class="line">    reportObj := report.Report&#123;</span><br><span class="line">        RedisHelper : mockRedisHelper, <span class="comment">// 用mock object初始化业务代码</span></span><br><span class="line">    &#125;</span><br><span class="line">    name, err := reportObj.RedisHelper.GetKey(<span class="string">&quot;person_1&quot;</span>)</span><br><span class="line">    assert.True(t, name == <span class="string">&quot;frank&quot;</span>)    <span class="comment">// EXPECT已经设置好，&quot;person_1&quot;返回&quot;frank&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>要点:  </p>
+<ul>
+<li> 必须先NewController，在测试函数执行最后调Finish()</li>
+<li> 用.EXEPCT().Method(inputs…).Return(outputs…)方式来指定(inputs, outputs)pair</li>
+<li>用EXPECT预设的case必须在Finish()之前满足调用数量一致，调用顺序和EXPECT顺序可以不等，可用Times()函数制订某method调用次数.    <figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mockRedisHelper.EXPECT().GetKey(<span class="string">&quot;person_2&quot;</span>).Return(<span class="string">&quot;lisha&quot;</span>, <span class="literal">nil</span>)</span><br><span class="line">mockRedisHelper.EXPECT().GetKey(<span class="string">&quot;person_1&quot;</span>).Return(<span class="string">&quot;frank&quot;</span>, <span class="literal">nil</span>)</span><br><span class="line"></span><br><span class="line">name, err := mockRedisHelper.GetKey(<span class="string">&quot;person_2&quot;</span>)</span><br><span class="line">assert.True(t, name == <span class="string">&quot;lisha&quot;</span>) <span class="comment">// 正确</span></span><br><span class="line"><span class="comment">// 最终会报错，因为没有调用GetKey(&quot;person_1&quot;)　</span></span><br></pre></td></tr></table></figure></li>
+</ul>
+<h5 id="mock-order"><a href="#mock-order" class="headerlink" title="mock order"></a>mock order</h5><p>有时我们需要验证的操作之前包含前后顺序关系，比如redis connection应先init再使用，可以用After()来实现</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">mockCtrl := gomock.NewController(t)</span><br><span class="line"><span class="keyword">defer</span> mockCtrl.Finish()</span><br><span class="line"></span><br><span class="line">mockRedisHelper := redis_helper_mock.NewMockRedisHelper(mockCtrl)</span><br><span class="line">callFirst := mockRedisHelper.EXPECT().ConnectToRedisServer(<span class="string">&quot;localhost:6704&quot;</span>).Return(<span class="literal">nil</span>).Times(<span class="number">1</span>)</span><br><span class="line">mockRedisHelper.EXPECT().GetKey(<span class="string">&quot;person_1&quot;</span>).Return(<span class="string">&quot;frank&quot;</span>, <span class="literal">nil</span>).After(callFirst)</span><br><span class="line">mockRedisHelper.EXPECT().GetKey(<span class="string">&quot;person_2&quot;</span>).Return(<span class="string">&quot;lisha&quot;</span>, <span class="literal">nil</span>).After(callFirst)</span><br><span class="line"></span><br><span class="line">mockRedisHelper.ConnectToRedisServer(<span class="string">&quot;localhost:6704&quot;</span>)</span><br><span class="line">name, err := mockRedisHelper.GetKey(<span class="string">&quot;person_2&quot;</span>)</span><br><span class="line">assert.True(t, name == <span class="string">&quot;lisha&quot;</span> &amp;&amp; err == <span class="literal">nil</span>)</span><br><span class="line">name, err = mockRedisHelper.GetKey(<span class="string">&quot;person_1&quot;</span>)</span><br><span class="line">assert.True(t, name == <span class="string">&quot;frank&quot;</span> &amp;&amp; err == <span class="literal">nil</span>)</span><br></pre></td></tr></table></figure>
+
+<p>如果先调用GetKey后调用ConnectToRedisServer会报错．After适用于两两调用间的先后关系，如想指定一系列操作的先后关系，用gomock.InOrder：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">gomock.InOrder(</span><br><span class="line">    mockDoer.EXPECT().DoSomething(<span class="number">1</span>, <span class="string">&quot;first this&quot;</span>),</span><br><span class="line">    mockDoer.EXPECT().DoSomething(<span class="number">2</span>, <span class="string">&quot;then this&quot;</span>),</span><br><span class="line">    mockDoer.EXPECT().DoSomething(<span class="number">3</span>, <span class="string">&quot;then this&quot;</span>),</span><br><span class="line">    mockDoer.EXPECT().DoSomething(<span class="number">4</span>, <span class="string">&quot;finally this&quot;</span>),</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h5 id="mock-type-match"><a href="#mock-type-match" class="headerlink" title="mock type match"></a>mock type match</h5><p>前文提到的mock object配置(inputs, outputs)对，当需要不需要精确匹配inputs时，gomock提供模糊匹配inputs的机制:match</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mockRedisHelper.EXPECT().ConnectToRedisServer(gomock.Any()).Return(<span class="literal">nil</span>).Times(<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>当不关心传入的值时，匹配任意inputs可用gomock.Any()，其他内置的还有: </p>
+<blockquote>
+</blockquote>
+<p>gomock.Eq(x): uses reflection to match values that are DeepEqual to x<br>gomock.Nil(): matches nil<br>gomock.Not(m): (where m is a Matcher) matches values not matched by the matcher m<br>gomock.Not(x): (where x is not a Matcher) matches values not DeepEqual to x  </p>
+<p><strong>注</strong> Times(1)指定ConnectToRedisServer只能被调用一次，否则test失败</p>
+<h5 id="其他高级特性"><a href="#其他高级特性" class="headerlink" title="其他高级特性"></a>其他高级特性</h5><ul>
+<li> gomock支持自定义match行为，需要实现gomock.Match interface</li>
+<li>可以给mockgen生成的mock object加入自定义行为: mock object其实只是实现了interface，本身并没有任何功能，一般通过EXPECT配置特定输入输出，但也可以用Do()为其添加职责(可参考生成的mock object代码，动态增加职责，用到了decorator模式)  <figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">mockDoer.EXPECT().</span><br><span class="line">DoSomething(gomock.Any(), gomock.Any()).</span><br><span class="line">Return(<span class="literal">nil</span>).</span><br><span class="line">Do(<span class="function"><span class="keyword">func</span><span class="params">(x <span class="keyword">int</span>, y <span class="keyword">string</span>)</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> x &gt; <span class="built_in">len</span>(y) &#123;</span><br><span class="line">        t.Fail()</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 其他更复杂的自定义行为 ... </span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="conclusion"><a href="#conclusion" class="headerlink" title="conclusion"></a>conclusion</h4><ul>
+<li> mock的目的是使单元测试代码不以来外部服务部署，进一步促进了代码与外部依赖的解偶．</li>
+<li> 通过mock object的测试后，仍需要有途径保证访问真实外部服务代码的正确性．</li>
+<li> mock其实是interface实现与test case的二合一，可以在测试代码中替换真实interface实现</li>
+<li> gomock基本test case通过一系列的EXPECT来指定，调用次数需匹配设定，顺序没有要求．</li>
+<li> gomock能实现诸如调用次数，调用顺序，自定义匹配Matche，自定义mock object行为等高级特性．</li>
+</ul>
+<h4 id="reference"><a href="#reference" class="headerlink" title="reference"></a>reference</h4><p><a target="_blank" rel="noopener" href="https://blog.codecentric.de/en/2017/08/gomock-tutorial/">Testing with GoMock: A Tutorial</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/golang/" rel="tag"># golang</a>
+              <a href="/tags/TDD/" rel="tag"># TDD</a>
+              <a href="/tags/gomock/" rel="tag"># gomock</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2018/04/23/exploring-Http-request-with-context-in-golang/" rel="prev" title="Exploring param passing With Golang's HTTP Context Support">
+                  <i class="fa fa-chevron-left"></i> Exploring param passing With Golang's HTTP Context Support
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/06/01/using-protobuf-in-golang/" rel="next" title="using protobuf in golang">
+                  using protobuf in golang <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

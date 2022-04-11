@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Background上篇介绍了why Helm 和package management feature, 本篇讨论如何使用Helm template engine.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Introduction to Helm -- part 2: template engine">
+<meta property="og:url" content="https://elitegoblin.github.io/2022/04/09/Introduction-to-Helm-part-2-template-engine/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Background上篇介绍了why Helm 和package management feature, 本篇讨论如何使用Helm template engine.">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-04-09T03:55:39.000Z">
+<meta property="article:modified_time" content="2022-04-11T21:54:45.941Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="k8s">
+<meta property="article:tag" content="Helm">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2022/04/09/Introduction-to-Helm-part-2-template-engine/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2022&#x2F;04&#x2F;09&#x2F;Introduction-to-Helm-part-2-template-engine&#x2F;&quot;,&quot;path&quot;:&quot;2022&#x2F;04&#x2F;09&#x2F;Introduction-to-Helm-part-2-template-engine&#x2F;&quot;,&quot;title&quot;:&quot;Introduction to Helm -- part 2: template engine&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Introduction to Helm -- part 2: template engine | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Background"><span class="nav-number">1.</span> <span class="nav-text">Background</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Debug"><span class="nav-number">2.</span> <span class="nav-text">Debug</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Go-template"><span class="nav-number">3.</span> <span class="nav-text">Go template</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Objects"><span class="nav-number">3.1.</span> <span class="nav-text">Objects</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cursor-%E5%92%8C-Context"><span class="nav-number">3.2.</span> <span class="nav-text">Cursor 和 Context</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Variables"><span class="nav-number">3.3.</span> <span class="nav-text">Variables</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Named-template"><span class="nav-number">3.4.</span> <span class="nav-text">Named template</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pipeline"><span class="nav-number">3.5.</span> <span class="nav-text">Pipeline</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Flow-Control"><span class="nav-number">3.6.</span> <span class="nav-text">Flow Control</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#if-else"><span class="nav-number">3.6.1.</span> <span class="nav-text">if&#x2F;else:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#with"><span class="nav-number">3.6.2.</span> <span class="nav-text">with</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#range"><span class="nav-number">3.6.3.</span> <span class="nav-text">range</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Whitespace"><span class="nav-number">3.6.4.</span> <span class="nav-text">Whitespace</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Data-type-and-Frequent-Functions"><span class="nav-number">3.7.</span> <span class="nav-text">Data type and Frequent Functions</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Reference"><span class="nav-number">4.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2022/04/09/Introduction-to-Helm-part-2-template-engine/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Introduction to Helm -- part 2: template engine
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-04-09 11:55:39" itemprop="dateCreated datePublished" datetime="2022-04-09T11:55:39+08:00">2022-04-09</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2022-04-12 05:54:45" itemprop="dateModified" datetime="2022-04-12T05:54:45+08:00">2022-04-12</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="Background"><a href="#Background" class="headerlink" title="Background"></a><a href="#background">Background</a></h1><p>上篇介绍了why Helm 和package management feature, 本篇讨论如何使用Helm template engine.</p>
+<span id="more"></span>
+
+<h1 id="Debug"><a href="#Debug" class="headerlink" title="Debug"></a><a href="#debug">Debug</a></h1><p>local try and error: 即时generate当前template:  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># cd mychart</span><br><span class="line">helm template . --debug 2&gt;&#x2F;dev&#x2F;null</span><br></pre></td></tr></table></figure>
+
+<p>Go tempalte提供<code>printf</code>打印object, 如打印<code>Values</code> object.</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#123; <span class="string">printf</span> <span class="string">&quot;%#v&quot;</span> <span class="string">$.Values</span> &#125;&#125;</span><br><span class="line">&#123;&#123; <span class="string">printf</span> <span class="string">&quot;%t&quot;</span> <span class="string">.Values.favorite</span> &#125;&#125;</span><br><span class="line">&#123;&#123; <span class="string">list</span> <span class="number">1</span> <span class="number">2</span> <span class="number">3</span> <span class="string">|</span> <span class="string">toStrings</span> &#125;&#125;</span><br><span class="line">&#123;&#123; <span class="string">dict</span> <span class="number">1</span> <span class="number">2.66</span> <span class="string">|</span> <span class="string">toJson</span> &#125;&#125;</span><br><span class="line">&#123;&#123; <span class="string">index</span> <span class="string">(list</span> <span class="number">1</span> <span class="number">2</span> <span class="number">3</span><span class="string">)</span> <span class="number">2</span>&#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="Go-template"><a href="#Go-template" class="headerlink" title="Go template"></a><a href="#go-template">Go template</a></h1><h2 id="Objects"><a href="#Objects" class="headerlink" title="Objects"></a>Objects</h2><p>Templates are executed by applying them to a data structure. </p>
+<p>Text Template + Go Object = 结果</p>
+<p>The current object is represented as <code>.</code>, e.g 若object是<code>string</code>: </p>
+<p>则render:  <code>&#123;&#123; . &#125;&#125;</code></p>
+<p>若当前object有<code>Name</code> field, 为string, 则: <code>&#123;&#123; .Name &#125;&#125;</code>.  </p>
+<p>关于Object传递到template: </p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Student <span class="keyword">struct</span> &#123;</span><br><span class="line">    Name <span class="keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line">s := Student&#123;<span class="string">&quot;Satish&quot;</span>&#125;</span><br><span class="line">tmpl, __ := tmpl.Parse(<span class="string">&quot;Hello &#123;&#123;.Name&#125;&#125;!&quot;</span>)</span><br><span class="line">tmpl.Execute(os.Stdout, s) <span class="comment">// 在上面的template, object s 就是 &quot;dot&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="Cursor-和-Context"><a href="#Cursor-和-Context" class="headerlink" title="Cursor 和 Context"></a>Cursor 和 Context</h2><p>When execution begins, <code>$</code> is set to the data argument passed to Execute; “Dot”代表当前cursor. </p>
+<blockquote>
+<p>Execution of the template walks the structure and sets the cursor, represented by a period ‘.’ and called “dot”, to the value at the current location in the structure as execution proceeds.</p>
+</blockquote>
+<p>Cursor即当前object/context,会变化: 如range, with 会设置不同的object, 到其内层template中. </p>
+<p><code>range</code>, <code>with</code> 包裹的template: 无法access外层Object,需要定义变量: 即这两者会让scope缩小(由输入的Object <code>$</code> 变为某个sub Object)</p>
+<h2 id="Variables"><a href="#Variables" class="headerlink" title="Variables"></a>Variables</h2><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Person <span class="keyword">struct</span> &#123;</span><br><span class="line">        Name   <span class="keyword">string</span></span><br><span class="line">        Emails []<span class="keyword">string</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">const</span> tmpl = <span class="string">`&#123;&#123;$name := .Name&#125;&#125;</span></span><br><span class="line"><span class="string">&#123;&#123;range .Emails&#125;&#125;</span></span><br><span class="line"><span class="string">    Name is &#123;&#123;$name&#125;&#125;, email is &#123;&#123;.&#125;&#125;</span></span><br><span class="line"><span class="string">&#123;&#123;end&#125;&#125;</span></span><br><span class="line"><span class="string">`</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">        person := Person&#123;</span><br><span class="line">                Name:   <span class="string">&quot;Satish&quot;</span>,</span><br><span class="line">                Emails: []<span class="keyword">string</span>&#123;</span><br><span class="line">                    <span class="string">&quot;satish@rubylearning.org&quot;</span>, </span><br><span class="line">                    <span class="string">&quot;satishtalim@gmail.com&quot;</span></span><br><span class="line">                &#125;,</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        t := template.New(<span class="string">&quot;Person template&quot;</span>)</span><br><span class="line">        t, _ := t.Parse(tmpl)</span><br><span class="line">        err = t.Execute(os.Stdout, person)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>传入的Object为<code>email</code> string, 无法access外层Object, 如Person’s name: 需要定义变量.</p>
+<p><code>with</code>也类似: 以下输出都是”output”</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#123;<span class="string">with</span> <span class="string">&quot;output&quot;</span>&#125;&#125;&#123;&#123;<span class="string">printf</span> <span class="string">&quot;%q&quot;</span> <span class="string">.</span>&#125;&#125;&#123;&#123;<span class="string">end</span>&#125;&#125;</span><br><span class="line">	<span class="comment"># A with action using dot.</span></span><br><span class="line"></span><br><span class="line">&#123;&#123;<span class="string">with</span> <span class="string">$x</span> <span class="string">:=</span> <span class="string">&quot;output&quot;</span> <span class="string">|</span> <span class="string">printf</span> <span class="string">&quot;%q&quot;</span>&#125;&#125;&#123;&#123;<span class="string">$x</span>&#125;&#125;&#123;&#123;<span class="string">end</span>&#125;&#125;</span><br><span class="line">	<span class="comment"># A with action that creates and uses a variable.</span></span><br><span class="line"></span><br><span class="line">&#123;&#123;<span class="string">with</span> <span class="string">$x</span> <span class="string">:=</span> <span class="string">&quot;output&quot;</span>&#125;&#125;&#123;&#123;<span class="string">printf</span> <span class="string">&quot;%q&quot;</span> <span class="string">$x</span>&#125;&#125;&#123;&#123;<span class="string">end</span>&#125;&#125;</span><br><span class="line">	<span class="comment"># A with action that uses a variable in another action.</span></span><br><span class="line"></span><br><span class="line">&#123;&#123;<span class="string">with</span> <span class="string">$x</span> <span class="string">:=</span> <span class="string">&quot;output&quot;</span>&#125;&#125;&#123;&#123;<span class="string">$x</span> <span class="string">|</span> <span class="string">printf</span> <span class="string">&quot;%q&quot;</span>&#125;&#125;&#123;&#123;<span class="string">end</span>&#125;&#125;</span><br><span class="line">	<span class="comment"># The same, but pipelined.</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="Named-template"><a href="#Named-template" class="headerlink" title="Named template"></a>Named template</h2><p>Tempalte内还可定义named template: </p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#123;<span class="string">define</span> <span class="string">&quot;T1&quot;</span>&#125;&#125;<span class="string">ONE&#123;&#123;end&#125;&#125;</span></span><br><span class="line">&#123;&#123;<span class="string">define</span> <span class="string">&quot;T2&quot;</span>&#125;&#125;<span class="string">TWO&#123;&#123;end&#125;&#125;</span></span><br><span class="line">&#123;&#123;<span class="string">define</span> <span class="string">&quot;T3&quot;</span>&#125;&#125;&#123;&#123;<span class="string">template</span> <span class="string">&quot;T1&quot;</span>&#125;&#125; &#123;&#123;<span class="string">template</span> <span class="string">&quot;T2&quot;</span>&#125;&#125;&#123;&#123;<span class="string">end</span>&#125;&#125;</span><br><span class="line">&#123;&#123;<span class="string">template</span> <span class="string">&quot;T3&quot;</span>&#125;&#125;</span><br><span class="line"><span class="comment"># output: ONE TWO</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="Pipeline"><a href="#Pipeline" class="headerlink" title="Pipeline"></a>Pipeline</h2><p>类似Linux的pipeline, 将多个component chain在一起: </p>
+<blockquote>
+<p>A pipeline may be “chained” by separating a sequence of commands with pipeline characters ‘|’. In a chained pipeline, the result of each command is passed as the last argument of the following command. The output of the final command in the pipeline is the value of the pipeline.</p>
+</blockquote>
+<p>A command is: </p>
+<ul>
+<li> a simple value (argument) or </li>
+<li> a function or </li>
+<li> method call</li>
+</ul>
+<p>当前cmd的last input是上一个cmd的output</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># A function call. The printf parameters are identical to fmt.Printf from Go.</span></span><br><span class="line">&#123;&#123;<span class="string">printf</span> <span class="string">&quot;%q&quot;</span> <span class="string">&quot;output&quot;</span>&#125;&#125;</span><br><span class="line"><span class="comment"># A function call whose final argument comes from the previous command.</span></span><br><span class="line">&#123;&#123;<span class="string">&quot;output&quot;</span> <span class="string">|</span> <span class="string">printf</span> <span class="string">&quot;%q&quot;</span>&#125;&#125;</span><br><span class="line"><span class="comment"># A parenthesized argument.</span></span><br><span class="line">&#123;&#123;<span class="string">printf</span> <span class="string">&quot;%q&quot;</span> <span class="string">(print</span> <span class="string">&quot;out&quot;</span> <span class="string">&quot;put&quot;</span><span class="string">)</span>&#125;&#125;</span><br><span class="line"><span class="comment"># A more elaborate call.</span></span><br><span class="line">&#123;&#123;<span class="string">&quot;put&quot;</span> <span class="string">|</span> <span class="string">printf</span> <span class="string">&quot;%s%s&quot;</span> <span class="string">&quot;out&quot;</span> <span class="string">|</span> <span class="string">printf</span> <span class="string">&quot;%q&quot;</span>&#125;&#125;</span><br><span class="line"><span class="comment"># A longer chain.</span></span><br><span class="line">&#123;&#123;<span class="string">&quot;output&quot;</span> <span class="string">|</span> <span class="string">printf</span> <span class="string">&quot;%s&quot;</span> <span class="string">|</span> <span class="string">printf</span> <span class="string">&quot;%q&quot;</span>&#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Flow-Control"><a href="#Flow-Control" class="headerlink" title="Flow Control"></a>Flow Control</h2><p>两类: </p>
+<p>control structures: </p>
+<ul>
+<li> if/else</li>
+<li> range</li>
+<li> with</li>
+</ul>
+<p>同时还有<code>action</code>: </p>
+<ul>
+<li> define: declares a new named template inside of your template</li>
+<li> template: imports a named template</li>
+</ul>
+<p>注: <code>include</code>是function, 可用在pipeline中，因此一般用<code>include</code>而不是<code>template</code></p>
+<p>The <code>include</code> function allows you to bring in another template, and then pass the results to other template functions.</p>
+<blockquote>
+<p>“Because template is an action, and not a function, there is no way to pass the output of a template call to other functions; the data is simply inserted inline.”  </p>
+</blockquote>
+<h3 id="if-else"><a href="#if-else" class="headerlink" title="if/else:"></a><code>if/else</code>:</h3><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#123; <span class="string">if</span> <span class="string">PIPELINE</span> &#125;&#125;</span><br><span class="line">  <span class="comment"># Do something</span></span><br><span class="line">&#123;&#123; <span class="string">else</span> <span class="string">if</span> <span class="string">OTHER</span> <span class="string">PIPELINE</span> &#125;&#125;</span><br><span class="line">  <span class="comment"># Do something else</span></span><br><span class="line">&#123;&#123; <span class="string">else</span> &#125;&#125;</span><br><span class="line">  <span class="comment"># Default case</span></span><br><span class="line">&#123;&#123; <span class="string">end</span> &#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>关于<code>false</code> condition: </p>
+<ul>
+<li> boolean false</li>
+<li> 0</li>
+<li> nil</li>
+<li> empty string, slice, map, etc</li>
+</ul>
+<h3 id="with"><a href="#with" class="headerlink" title="with"></a><code>with</code></h3><p>用来modify scope的:  </p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#123; <span class="string">with</span> <span class="string">PIPELINE</span> &#125;&#125;</span><br><span class="line">  <span class="comment"># restricted scope</span></span><br><span class="line">&#123;&#123; <span class="string">end</span> &#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>例子见下面: </p>
+<h3 id="range"><a href="#range" class="headerlink" title="range"></a>range</h3><p>values: </p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">favorite:</span></span><br><span class="line">  <span class="attr">drink:</span> <span class="string">coffee</span></span><br><span class="line">  <span class="attr">food:</span> <span class="string">pizza</span></span><br><span class="line"><span class="attr">pizzaToppings:</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">mushrooms</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">cheese</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">peppers</span></span><br><span class="line">  <span class="bullet">-</span> <span class="string">onions</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ConfigMap</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> &#123;&#123; <span class="string">.Release.Name</span> &#125;&#125;<span class="string">-configmap</span></span><br><span class="line"><span class="attr">data:</span></span><br><span class="line">  <span class="attr">myvalue:</span> <span class="string">&quot;Hello World&quot;</span></span><br><span class="line">  &#123;&#123;<span class="bullet">-</span> <span class="string">with</span> <span class="string">.Values.favorite</span> &#125;&#125;</span><br><span class="line">  <span class="attr">drink:</span> &#123;&#123; <span class="string">.drink</span> <span class="string">|</span> <span class="string">default</span> <span class="string">&quot;tea&quot;</span> <span class="string">|</span> <span class="string">quote</span> &#125;&#125;</span><br><span class="line">  <span class="attr">food:</span> &#123;&#123; <span class="string">.food</span> <span class="string">|</span> <span class="string">upper</span> <span class="string">|</span> <span class="string">quote</span> &#125;&#125;</span><br><span class="line">  &#123;&#123;<span class="bullet">-</span> <span class="string">end</span> &#125;&#125;</span><br><span class="line">  <span class="attr">toppings:</span> <span class="string">|-</span></span><br><span class="line">    &#123;&#123;<span class="bullet">-</span> <span class="string">range</span> <span class="string">.Values.pizzaToppings</span> &#125;&#125;</span><br><span class="line">    <span class="bullet">-</span> &#123;&#123; <span class="string">.</span> <span class="string">|</span> <span class="string">title</span> <span class="string">|</span> <span class="string">quote</span> &#125;&#125;</span><br><span class="line">    &#123;&#123;<span class="bullet">-</span> <span class="string">end</span> &#125;&#125;    </span><br></pre></td></tr></table></figure>
+
+<p>注意<code>&#123;&#123; . | title | quote &#125;&#125;</code>, scope在<code>range</code>之后发生了改变: 变为list element.</p>
+<h3 id="Whitespace"><a href="#Whitespace" class="headerlink" title="Whitespace"></a>Whitespace</h3><p><code>if/else</code>和<code>range</code>很常见, 但Go template engine会产生些unexpected whitespace(包含space和换行): </p>
+<blockquote>
+<p>When the template engine runs, it removes the contents inside of , but it leaves the remaining whitespace exactly as is.</p>
+</blockquote>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">food:</span> <span class="string">&quot;cake&quot;</span></span><br><span class="line">&#123;&#123; <span class="string">if</span> <span class="string">eq</span> <span class="string">.Values.favorite.drink</span> <span class="string">&quot;coffee&quot;</span> &#125;&#125;</span><br><span class="line"><span class="attr">mug:</span> <span class="string">&quot;true&quot;</span></span><br><span class="line">&#123;&#123; <span class="string">end</span> &#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>会生成额外的换行(由<code>if</code>而来): </p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">food:</span> <span class="string">&quot;PIZZA&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">mug:</span> <span class="string">&quot;true&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>解决方法是: </p>
+<ul>
+<li> <code>&#123;&#123;- `(with the dash and space added):  whitespace should be chomped left: 消除左whitespace直到遇到非whitespace字符:
+*  ` -&#125;&#125;</code>: 消除右whitespace直到非whitespace字符</li>
+</ul>
+<p>效果示意: </p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">ConfigMap</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> &#123;&#123; <span class="string">.Release.Name</span> &#125;&#125;<span class="string">-configmap</span></span><br><span class="line"><span class="attr">data:</span></span><br><span class="line">  <span class="attr">myvalue:</span> <span class="string">&quot;Hello World&quot;</span></span><br><span class="line">  <span class="attr">drink:</span> &#123;&#123; <span class="string">.Values.favorite.drink</span> <span class="string">|</span> <span class="string">default</span> <span class="string">&quot;tea&quot;</span> <span class="string">|</span> <span class="string">quote</span> &#125;&#125;</span><br><span class="line">  <span class="attr">food:</span> &#123;&#123; <span class="string">.Values.favorite.food</span> <span class="string">|</span> <span class="string">upper</span> <span class="string">|</span> <span class="string">quote</span> &#125;&#125;<span class="string">*</span></span><br><span class="line"><span class="string">**&#123;&#123;-</span> <span class="string">if</span> <span class="string">eq</span> <span class="string">.Values.favorite.drink</span> <span class="string">&quot;coffee&quot;</span> <span class="string">&#125;&#125;</span></span><br><span class="line">  <span class="attr">mug:</span> <span class="string">&quot;true&quot;</span><span class="string">*</span></span><br><span class="line"><span class="string">**&#123;&#123;-</span> <span class="string">end</span> <span class="string">&#125;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li> <code>*</code>代表删除的whitespace!</li>
+<li> <code>if</code> 行没有产生实际内容(仅仅控制内容产生), <code>&#123;&#123;- </code>消除其whitespace</li>
+<li> <code>end</code>行也同样没有内容，不消除会多出一个空行. </li>
+</ul>
+<p>e.g: </p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">drink:</span> &#123;&#123; <span class="string">.Values.favorite.drink</span> <span class="string">|</span> <span class="string">default</span> <span class="string">&quot;tea&quot;</span> <span class="string">|</span> <span class="string">quote</span> &#125;&#125;</span><br><span class="line"><span class="attr">food:</span> &#123;&#123; <span class="string">.Values.favorite.food</span> <span class="string">|</span> <span class="string">upper</span> <span class="string">|</span> <span class="string">quote</span> &#125;&#125;</span><br><span class="line">&#123;&#123; <span class="string">if</span> <span class="string">eq</span> <span class="string">.Values.favorite.drink</span> <span class="string">&quot;coffee&quot;</span> &#125;&#125;</span><br><span class="line"><span class="attr">mug:</span> <span class="string">&quot;true&quot;</span></span><br><span class="line">&#123;&#123; <span class="string">end</span> &#125;&#125;</span><br><span class="line"><span class="attr">another:</span> <span class="string">&quot;123&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>values为:</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">favorite:</span></span><br><span class="line">  <span class="attr">drink:</span> <span class="string">coffee</span></span><br><span class="line">  <span class="attr">food:</span> <span class="string">pizza</span></span><br></pre></td></tr></table></figure>
+
+<p>输出: </p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">drink:</span> <span class="string">&quot;coffee&quot;</span></span><br><span class="line"><span class="attr">food:</span> <span class="string">&quot;PIZZA&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">mug:</span> <span class="string">&quot;true&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="attr">another:</span> <span class="string">&quot;123&quot;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Be careful! Newlines are whitespace!</p>
+</blockquote>
+<p>还可以用 <code>ident</code> 来控制空格, 如: </p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&#123; <span class="string">include</span> <span class="string">&quot;api-service-tpl.rollout.env.common&quot;</span> <span class="string">.</span> <span class="string">|</span> <span class="string">indent</span> <span class="number">12</span> &#125;&#125;</span><br></pre></td></tr></table></figure>
+
+<p><a target="_blank" rel="noopener" href="https://helm.sh/docs/chart_template_guide/control_structures/">Helm doc: Flow Control</a>  里讲解的很清楚.  </p>
+<h2 id="Data-type-and-Frequent-Functions"><a href="#Data-type-and-Frequent-Functions" class="headerlink" title="Data type and Frequent Functions"></a>Data type and Frequent Functions</h2><p>Variables in templates are <a target="_blank" rel="noopener" href="https://helm.sh/docs/chart_template_guide/data_types/">typed</a>(因为Go是typed):  </p>
+<ul>
+<li> string</li>
+<li> bool</li>
+<li> int</li>
+<li> float64</li>
+<li> byte array</li>
+<li> object/struct</li>
+<li> list: immutable</li>
+<li> dict: a string-keyed map (<code>map[string]interface&#123;&#125;</code>), where the value is one of the previous types</li>
+</ul>
+<p>function建立在data type基石上, 理解一门语言的data type至关重要. </p>
+<p>Helm template function有两部分:  </p>
+<ul>
+<li> Go Template Function</li>
+<li> <a target="_blank" rel="noopener" href="http://masterminds.github.io/sprig/">sprig function for Go Template</a></li>
+</ul>
+<p>全部Helm function在<a target="_blank" rel="noopener" href="https://helm.sh/docs/chart_template_guide/function_list/">Template Function List</a>  </p>
+<p>一些常见函数:  </p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># if .Bar empty/non-exist, set to &quot;foo&quot;</span></span><br><span class="line"><span class="string">default</span> <span class="string">&quot;foo&quot;</span> <span class="string">.Bar</span> </span><br><span class="line"><span class="comment"># takes a list of values and returns the first non-empty one</span></span><br><span class="line"><span class="string">coalesce</span> <span class="number">0</span> <span class="number">1</span> <span class="number">2</span> <span class="comment"># 1</span></span><br><span class="line"><span class="comment"># create a list, output to type conversion function</span></span><br><span class="line">&#123;&#123; <span class="string">list</span> <span class="number">1</span> <span class="number">2</span> <span class="number">3</span> <span class="string">|</span> <span class="string">toStrings</span> &#125;&#125; <span class="comment"># 1 2 3</span></span><br><span class="line"><span class="comment"># Create a dict: &quot;name1&quot; &quot;value1&quot; &quot;name2&quot; &quot;value2&quot; &quot;name3&quot; &quot;value 3&quot;</span></span><br><span class="line">&#123;&#123; <span class="string">dict</span> <span class="number">1</span> <span class="number">2.66</span> <span class="string">|</span> <span class="string">toJson</span> &#125;&#125; <span class="comment"># &#123;&quot;1&quot;:2.66&#125;</span></span><br><span class="line"><span class="comment"># To get the nth element of a list, multi-dimensional: index $mylist i j k</span></span><br><span class="line">&#123;&#123; <span class="string">index</span> <span class="string">(list</span> <span class="number">1</span> <span class="number">2</span> <span class="number">3</span><span class="string">)</span> <span class="number">2</span>&#125;&#125; <span class="comment"># 3</span></span><br><span class="line"><span class="comment"># merge $dest $source1 $source2, Merge two or more dictionaries into one, first get precedence</span></span><br><span class="line">&#123;&#123; <span class="string">merge</span> <span class="string">(dict</span> <span class="string">&quot;name&quot;</span> <span class="string">&quot;Frank&quot;</span><span class="string">)</span> <span class="string">(dict</span> <span class="string">&quot;name&quot;</span> <span class="string">&quot;Joe&quot;</span><span class="string">)</span> <span class="string">(dict</span> <span class="string">&quot;name&quot;</span> <span class="string">&quot;Jacob&quot;</span><span class="string">)</span> <span class="string">(dict</span> <span class="string">&quot;addr&quot;</span> <span class="string">&quot;bondi&quot;</span><span class="string">)</span> &#125;&#125; <span class="comment"># map[addr:bondi name:Frank]</span></span><br><span class="line"><span class="comment"># mustMerge will return an error in case of unsuccessful merge</span></span><br></pre></td></tr></table></figure>
+
+<p>下一篇谈Helm template相关的advanced features.</p>
+<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a target="_blank" rel="noopener" href="https://pkg.go.dev/text/template">Go text/template</a><br><a target="_blank" rel="noopener" href="https://banzaicloud.com/blog/creating-helm-charts-part-2/">Helm from basics to advanced — part II</a><br><a target="_blank" rel="noopener" href="https://helm.sh/docs/chart_template_guide/values_files/">Values Files</a>  </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/k8s/" rel="tag"># k8s</a>
+              <a href="/tags/Helm/" rel="tag"># Helm</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/04/07/Introduction-to-Helm-part-1-features/" rel="prev" title="Introduction to Helm -- part 1: why and Helm features">
+                  <i class="fa fa-chevron-left"></i> Introduction to Helm -- part 1: why and Helm features
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

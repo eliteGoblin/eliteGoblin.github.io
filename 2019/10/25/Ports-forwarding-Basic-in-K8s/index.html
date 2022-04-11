@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Preface在K8s中，我们需要在很多地方映射端口，如  Container port Service port Node port  常常会带来疑惑，在这里我们尝试梳理一下有关container, K8s port的方方面面，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ports forwarding Basic in K8s">
+<meta property="og:url" content="https://elitegoblin.github.io/2019/10/25/Ports-forwarding-Basic-in-K8s/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Preface在K8s中，我们需要在很多地方映射端口，如  Container port Service port Node port  常常会带来疑惑，在这里我们尝试梳理一下有关container, K8s port的方方面面，">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-10-25T08:49:19.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.277Z">
+<meta property="article:author" content="eliteGoblin">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2019/10/25/Ports-forwarding-Basic-in-K8s/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2019&#x2F;10&#x2F;25&#x2F;Ports-forwarding-Basic-in-K8s&#x2F;&quot;,&quot;path&quot;:&quot;2019&#x2F;10&#x2F;25&#x2F;Ports-forwarding-Basic-in-K8s&#x2F;&quot;,&quot;title&quot;:&quot;Ports forwarding Basic in K8s&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Ports forwarding Basic in K8s | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B9%E6%BA%90-Container-Port"><span class="nav-number">2.</span> <span class="nav-text">根源: Container Port</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E7%8E%AF%E5%A2%83"><span class="nav-number">2.1.</span> <span class="nav-text">测试环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UnPublished-Port"><span class="nav-number">2.2.</span> <span class="nav-text">UnPublished Port</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Expose"><span class="nav-number">2.3.</span> <span class="nav-text">Expose</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Expose-but-not-listen"><span class="nav-number">2.4.</span> <span class="nav-text">Expose but not listen</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Container-port-in-K8s"><span class="nav-number">3.</span> <span class="nav-text">Container port in K8s</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Service-Port"><span class="nav-number">4.</span> <span class="nav-text">Service Port</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Node-Port"><span class="nav-number">5.</span> <span class="nav-text">Node Port</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Conclusion"><span class="nav-number">6.</span> <span class="nav-text">Conclusion</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2019/10/25/Ports-forwarding-Basic-in-K8s/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Ports forwarding Basic in K8s
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-10-25 16:49:19" itemprop="dateCreated datePublished" datetime="2019-10-25T16:49:19+08:00">2019-10-25</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        
+
+<h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>在K8s中，我们需要在很多地方映射端口，如</p>
+<ul>
+<li>Container port</li>
+<li>Service port</li>
+<li>Node port</li>
+</ul>
+<p>常常会带来疑惑，在这里我们尝试梳理一下有关container, K8s port的方方面面，</p>
+<span id="more"></span>
+
+<h2 id="根源-Container-Port"><a href="#根源-Container-Port" class="headerlink" title="根源: Container Port"></a>根源: Container Port</h2><p>K8s作为容器编排系统，是建立在容器技术之上的，因此我们先来看看docker port。</p>
+<p>官方Doc:</p>
+<blockquote>
+<p>By default, when you create a container, it does not publish any of its ports to the outside world.</p>
+</blockquote>
+<blockquote>
+<p>To make a port available to services outside of Docker, or to Docker containers which are not connected to the container’s network, use the –publish or -p flag. This creates a firewall rule which maps a container port to a port on the Docker host. Here are some examples</p>
+</blockquote>
+<p>简单的说就是可以通过publish命令来将docker内部port映射到host上，format: 主机端口:容器端口，几个example: </p>
+<ul>
+<li>-p 8080:80</li>
+<li>-p 192.168.1.100:8080:80</li>
+<li>-p 8080:80/udp</li>
+<li>-p 8080:80/tcp -p 8080:80/udp</li>
+</ul>
+<p>可以指定protocol, host ip等。</p>
+<p>container ports涉及到的概念有publish, expose，我们来一一看一下</p>
+<h3 id="测试环境"><a href="#测试环境" class="headerlink" title="测试环境"></a>测试环境</h3><p><a target="_blank" rel="noopener" href="https://github.com/arunvelsriram/utils">arunvelsriram/utils</a>是一个集成了很多有用utils的image，如nc, psql, dig等，调试问题很方便。我们将以其为模板，只留下我们需要的工具，build我们自己的image来测试端口映射。</p>
+<p>Dockerfile可以在<a target="_blank" rel="noopener" href="https://github.com/eliteGoblin/code_4_blog/tree/master/utils_image">这里</a>找到。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build -t elitegoblin&#x2F;testports .</span><br></pre></td></tr></table></figure>
+
+<p>这条命令在我们本地(Ubuntu 18.04)build名为elitegoblin/testports的image。</p>
+<p>我们用nc命令(netcat)来模拟监听某个端口的服务，对于调试网络很方便。</p>
+<h3 id="UnPublished-Port"><a href="#UnPublished-Port" class="headerlink" title="UnPublished Port"></a>UnPublished Port</h3><p>Publish意味着将container port映射到host上，只有host admin才有权限，也意味着 <strong>运行时</strong> 进行的操作。</p>
+<p>有个问题，没有publish的port，究竟能不能被外界访问呢？我们来测试一下：</p>
+<p>我们通过netcat(nc)监听8888端口，但是并不将其publish</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --name srv --rm elitegoblin&#x2F;testports nc -l 8888</span><br></pre></td></tr></table></figure>
+
+<p>通过<code>docker inspect srv</code>命令获得容器ip: 172.17.0.2，在另一个容器中运行curl来看srv的8888端口是否开放</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">docker run --rm -ti elitegoblin&#x2F;testports bash</span><br><span class="line"># inside container</span><br><span class="line"># curl 172.17.0.2:8888</span><br></pre></td></tr></table></figure>
+
+<p>我们可以看到srv端收到HTTP请求，证明没有publish，仍可以被外界访问</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">GET &#x2F; HTTP&#x2F;1.1</span><br><span class="line">Host: 172.17.0.2:8888</span><br><span class="line">User-Agent: curl&#x2F;7.58.0</span><br><span class="line">Accept: *&#x2F;*</span><br></pre></td></tr></table></figure>
+
+<p>同样也可以在host上用curl访问到，这表明: </p>
+<ul>
+<li>Publish是将container port映射到host</li>
+<li>如果直接访问容器的IP，可以访问到没有publish的port</li>
+<li>Publish不需要先expose, publish unexposed port效果一样</li>
+</ul>
+<h3 id="Expose"><a href="#Expose" class="headerlink" title="Expose"></a>Expose</h3><p>docker port的publish简单易懂，关于expose: </p>
+<blockquote>
+<p>The EXPOSE instruction does not actually publish the port.  It functions as a type of documentation between the person who builds the image and the person who runs the container, about which ports are intended to be published. </p>
+</blockquote>
+<p>从文档里我们了解到expose是文档，也就是常常见于Dockerfile中，区别于publish作用于运行时，expose是image author侧的责任，表明此image需要publish哪些ports，但是并不会(也不能)publish，因为image作者并没有host上的任何权限。</p>
+<blockquote>
+<p>To actually publish the port when running the container, use the -p flag on docker run to publish and map one or more ports, or the -P flag to publish all exposed ports and map them to high-order ports.</p>
+</blockquote>
+<p>Expose并不仅仅是文档，docker可以自动将expose的port map到host的一个random端口。</p>
+<p>我们添加EXPOSE directive到我们的dockerfile: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">EXPOSE 8888</span><br></pre></td></tr></table></figure>
+
+<p>再运行docker</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --name srv --rm -P elitegoblin&#x2F;testports nc -l 8888</span><br></pre></td></tr></table></figure>
+
+<p>通过<code>docker port srv</code>我们可以看到8888被映射到了host:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">8888&#x2F;tcp -&gt; 0.0.0.0:32773</span><br></pre></td></tr></table></figure>
+<p>可以在host上运行curl</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl http:&#x2F;&#x2F;localhost:32773</span><br></pre></td></tr></table></figure>
+
+<p>同样可以看到HTTP请求到达srv</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">GET &#x2F; HTTP&#x2F;1.1</span><br><span class="line">Host: localhost:32773</span><br><span class="line">User-Agent: curl&#x2F;7.58.0</span><br><span class="line">Accept: *&#x2F;*</span><br></pre></td></tr></table></figure>
+
+<h3 id="Expose-but-not-listen"><a href="#Expose-but-not-listen" class="headerlink" title="Expose but not listen"></a>Expose but not listen</h3><p>我们来看一下如果container内部没有使用，但是EXPOSE有无影响，同样在Dockerfile中: </p>
+<p><code>EXPOSE 8888</code></p>
+<p>启动container</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --name srv --rm -ti -P elitegoblin&#x2F;testports bash</span><br></pre></td></tr></table></figure>
+<p>运行命令: <code>docker port srv</code>,发现虽然没有listen，仍然进行了映射：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">8888&#x2F;tcp -&gt; 0.0.0.0:32775</span><br></pre></td></tr></table></figure>
+
+<p>在host上运行<code>curl http://localhost:32775</code>，不出意料的得到: <code>Connection reset by peer</code>，因为container内部并没有监听。</p>
+<p>这时我们在容器内部启动nc监听8888端口，再次在host上curl，请求成功到达srv</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">GET &#x2F; HTTP&#x2F;1.1</span><br><span class="line">Host: localhost:32775</span><br><span class="line">User-Agent: curl&#x2F;7.58.0</span><br><span class="line">Accept: *&#x2F;*</span><br></pre></td></tr></table></figure>
+
+<p>说明EXPOSE作用是创建映射规则，并不要求container port被listen。</p>
+<h2 id="Container-port-in-K8s"><a href="#Container-port-in-K8s" class="headerlink" title="Container port in K8s"></a>Container port in K8s</h2><p>在K8s环境，我们在deployment的config中常会见到关于container port [^1]</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ports:</span><br><span class="line">- containerPort: 3306</span><br><span class="line">  name: mysql</span><br></pre></td></tr></table></figure>
+
+<p>K8s文档里写道: </p>
+<blockquote>
+<p>List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed.</p>
+</blockquote>
+<p>又一个informational，和EXPOSE极为类似，这个参数就是说明container内部监听了3306端口，有没有它对port是否能被外界访问到并没有影响，完全是为方便阅读者理解。</p>
+<p>在K8s内部，其实我们并不关心port是否publish到host上，我们一般是: </p>
+<ul>
+<li> container/pod内部监听port</li>
+<li> 通过service访问一组pods</li>
+<li> service之上完成service port到container port的映射</li>
+</ul>
+<p>比如在pod内部我们想访问另一组pods时，对应服务记为example-svc: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl http:&#x2F;&#x2F;&#123;example-svc-name&#125;:&#123;svc-port&#125;&#x2F;path&#x2F;of&#x2F;my&#x2F;url</span><br></pre></td></tr></table></figure>
+
+<p>这就涉及到另一个转换: service到container port。</p>
+<h2 id="Service-Port"><a href="#Service-Port" class="headerlink" title="Service Port"></a>Service Port</h2><p>一个典型的multi-port service配置如下 [^2]</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">my-service</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">MyApp</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http</span></span><br><span class="line">      <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">9376</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">https</span></span><br><span class="line">      <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">443</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">9377</span></span><br></pre></td></tr></table></figure>
+
+<p>它对每个port分别定义了映射规则，这样当pods访问 <code>http://my-service/xx</code>时，会被redirect到pods的9376端口；而<code>http://my-service:443/xx</code>被redirect到pods的9377端口。</p>
+<h2 id="Node-Port"><a href="#Node-Port" class="headerlink" title="Node Port"></a>Node Port</h2><p>NodePort是一种向外界暴露service时方法：将service映射为host的port，在host上访问此node port会被redirect到内部的service，有点像docker里面的publish port。</p>
+<p>这是另一层映射，主机port映射为service的port，我们来修改一下上述多端口的service的定义，增加字段<code>type: NodePort</code>: </p>
+<p>my-service.yaml</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">apiVersion:</span> <span class="string">v1</span></span><br><span class="line"><span class="attr">kind:</span> <span class="string">Service</span></span><br><span class="line"><span class="attr">metadata:</span></span><br><span class="line">  <span class="attr">name:</span> <span class="string">my-service</span></span><br><span class="line"><span class="attr">spec:</span></span><br><span class="line">  <span class="attr">selector:</span></span><br><span class="line">    <span class="attr">app:</span> <span class="string">MyApp</span></span><br><span class="line">  <span class="attr">type:</span> <span class="string">NodePort</span></span><br><span class="line">  <span class="attr">ports:</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">http</span></span><br><span class="line">      <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">80</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">9376</span></span><br><span class="line">    <span class="bullet">-</span> <span class="attr">name:</span> <span class="string">https</span></span><br><span class="line">      <span class="attr">protocol:</span> <span class="string">TCP</span></span><br><span class="line">      <span class="attr">port:</span> <span class="number">443</span></span><br><span class="line">      <span class="attr">targetPort:</span> <span class="number">9377</span></span><br></pre></td></tr></table></figure>
+<p>deploy service: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f my-service.yaml</span><br></pre></td></tr></table></figure>
+
+<p>查看my-service的详细信息 <code>kubectl describe services my-service</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Type:                     NodePort</span><br><span class="line">IP:                       100.64.30.206</span><br><span class="line">Port:                     http  80&#x2F;TCP</span><br><span class="line">TargetPort:               9376&#x2F;TCP</span><br><span class="line">NodePort:                 http  30938&#x2F;TCP</span><br><span class="line">Endpoints:                &lt;none&gt;</span><br><span class="line">Port:                     https  443&#x2F;TCP</span><br><span class="line">TargetPort:               9377&#x2F;TCP</span><br><span class="line">NodePort:                 https  32709&#x2F;TCP</span><br></pre></td></tr></table></figure>
+
+<p>我们看到两个三元组，和service定义对应:</p>
+<ul>
+<li>HTTP<ul>
+<li>port: 80</li>
+<li>target port: 9376</li>
+<li>node port: 30938</li>
+</ul>
+</li>
+<li>HTTPS<ul>
+<li>port: 443</li>
+<li>target port: 9377</li>
+<li>node port: 32709</li>
+</ul>
+</li>
+</ul>
+<p>可见port映射了两次: node port –&gt; port(service port) –&gt; target port;</p>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>通过分析，我们了解了：</p>
+<ul>
+<li> 在Container内部，EXPOSE有两个作用：指示container listen哪个端口，另外<code>docker run -P</code>会自动将EXPOSE的port　publish到host上(随机分配端口); EXPOSE并不控制，也就是对port实际是否能被访问没有作用</li>
+<li> Deployment的containerPort字段也是informative，可以省略。</li>
+<li> Service实现了port–&gt;container port的映射</li>
+<li> Service如果是NodePort，还有node port(host port) –&gt; service port的映射。</li>
+</ul>
+<p>有点小绕，画一个图压压惊: </p>
+
+
+
+<p>[^1]: <a target="_blank" rel="noopener" href="https://medium.com/faun/should-i-configure-the-ports-in-kubernetes-deployment-c6b3817e495">Should I configure the ports in the Kubernetes deployment?</a><br>[^2]: <a target="_blank" rel="noopener" href="https://kubernetes.io/docs/concepts/services-networking/service/#multi-port-services">Multi-port Services</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/10/10/Using-Heap-in-Golang/" rel="prev" title="Using Heap in Golang">
+                  <i class="fa fa-chevron-left"></i> Using Heap in Golang
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/11/14/K8s-Internal-Service-Discovery-and-DNS/" rel="next" title="K8s服务发现机制及DNS">
+                  K8s服务发现机制及DNS <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

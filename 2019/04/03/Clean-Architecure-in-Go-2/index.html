@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Preface接上篇 Clean Architecure in Go (1)，本文将会包含如下内容：   Clean Architecture层次划分依据  实现Dependency Inversion: Dependency Injection  采用Clean Architecture的prject layout示例  A simple demo: Clean Architecture实践">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Clean Architecure in Go (2)">
+<meta property="og:url" content="https://elitegoblin.github.io/2019/04/03/Clean-Architecure-in-Go-2/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Preface接上篇 Clean Architecure in Go (1)，本文将会包含如下内容：   Clean Architecture层次划分依据  实现Dependency Inversion: Dependency Injection  采用Clean Architecture的prject layout示例  A simple demo: Clean Architecture实践">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-04-03T05:35:12.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="Architecure golang">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2019/04/03/Clean-Architecure-in-Go-2/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2019&#x2F;04&#x2F;03&#x2F;Clean-Architecure-in-Go-2&#x2F;&quot;,&quot;path&quot;:&quot;2019&#x2F;04&#x2F;03&#x2F;Clean-Architecure-in-Go-2&#x2F;&quot;,&quot;title&quot;:&quot;Clean Architecure in Go (2)&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Clean Architecure in Go (2) | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Analysis-of-Clean-Architecture-by-layer"><span class="nav-number">2.</span> <span class="nav-text">Analysis of Clean Architecture by layer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#History-of-Clean-Architecture"><span class="nav-number">2.1.</span> <span class="nav-text">History of Clean Architecture</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Why-Layered"><span class="nav-number">2.2.</span> <span class="nav-text">Why Layered?</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#The-Dependency-Rule"><span class="nav-number">2.3.</span> <span class="nav-text">The Dependency Rule</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Entity-Layer"><span class="nav-number">2.4.</span> <span class="nav-text">Entity Layer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Usecase-Layer"><span class="nav-number">2.5.</span> <span class="nav-text">Usecase Layer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Interface-Adapters-Layer"><span class="nav-number">2.6.</span> <span class="nav-text">Interface Adapters Layer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Frameworks-and-Drivers-Layer"><span class="nav-number">2.7.</span> <span class="nav-text">Frameworks and Drivers Layer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#A-Clean-Architecture-Layout-Example"><span class="nav-number">2.8.</span> <span class="nav-text">A Clean Architecture Layout Example</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Dependency-Injection"><span class="nav-number">3.</span> <span class="nav-text">Dependency Injection</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Demo-User-Registration"><span class="nav-number">4.</span> <span class="nav-text">Demo: User Registration</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pros-and-Cons"><span class="nav-number">5.</span> <span class="nav-text">Pros and Cons</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Conclusion"><span class="nav-number">6.</span> <span class="nav-text">Conclusion</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#More-reading-and-reference"><span class="nav-number">7.</span> <span class="nav-text">More reading and reference</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2019/04/03/Clean-Architecure-in-Go-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Clean Architecure in Go (2)
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-04-03 13:35:12" itemprop="dateCreated datePublished" datetime="2019-04-03T13:35:12+08:00">2019-04-03</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>接上篇 Clean Architecure in Go (1)，本文将会包含如下内容：</p>
+<ul>
+<li> Clean Architecture层次划分依据</li>
+<li> 实现Dependency Inversion: Dependency Injection</li>
+<li> 采用Clean Architecture的prject layout示例</li>
+<li> A simple demo: Clean Architecture实践</li>
+</ul>
+<div align="center">
+
+</div>
+
+<span id="more"></span>
+
+<h2 id="Analysis-of-Clean-Architecture-by-layer"><a href="#Analysis-of-Clean-Architecture-by-layer" class="headerlink" title="Analysis of Clean Architecture by layer"></a>Analysis of Clean Architecture by layer</h2><h3 id="History-of-Clean-Architecture"><a href="#History-of-Clean-Architecture" class="headerlink" title="History of Clean Architecture"></a>History of Clean Architecture</h3><p>早在Uncle Bob提出Clean Architecture之前，已经有很多类似的提案：Hexagonal, Onion, DCI, BCE Architecture，所有这些architecture提案解决如下问题，和第一篇文章提到的架构痛点本质上是一回事：</p>
+<blockquote>
+<p>Independent of Frameworks. The architecture does not depend on the existence of some library of feature laden software. This allows you to use such frameworks as tools, rather than having to cram your system into their limited constraints.<br>Testable. The business rules can be tested without the UI, Database, Web Server, or any other external element.<br>Independent of UI. The UI can change easily, without changing the rest of the system. A Web UI could be replaced with a console UI, for example, without changing the business rules.<br>Independent of Database. You can swap out Oracle or SQL Server, for Mongo, BigTable, CouchDB, or something else. Your business rules are not bound to the database.<br>Independent of any external agency. In fact your business rules simply don’t know anything at all about the outside world.  </p>
+</blockquote>
+<p>Uncle Bob正是在这些架构的基础上，提出了简单易行的Clean Architecture</p>
+<h3 id="Why-Layered"><a href="#Why-Layered" class="headerlink" title="Why Layered?"></a>Why Layered?</h3><p>UNIX的架构图和Clean Architecture极为相似，都是layered approach，且外层为细节，内层为核心(kernel)，外层依赖核心的实现，而非相反。  </p>
+<div align="center">
+
+</div>
+
+<p>同理还有TCP/IP协议栈，分层使得高层不必依赖底层实现的细节，只要底层实现了高层需要的接口，无论底层如何实现，高层的逻辑也不必改动。</p>
+<h3 id="The-Dependency-Rule"><a href="#The-Dependency-Rule" class="headerlink" title="The Dependency Rule"></a>The Dependency Rule</h3><p>正如我们之前提到的，痛点的根源是错误的dependency，Clean Architecture解决之道是：<em>只允许外层依赖内层</em>，dependency箭头由外向内，由细节/底层到抽象/高层，绝不允许相反的情况。</p>
+<p>每个同心圆代表软件的一层，最外层是具体细节，是mechanism；最内层是最核心的business logic，是policy，是最不容易变化的部分。</p>
+<p>我们代码中，有时候会见到我们的业务逻辑模块，输入直接是database的row对应的struct，这就是Anti-pattern，因为database schema是实现细节，不应该影响我们业务逻辑，比如我们即使改动数据库表结构，甚至更换了数据库类型，业务逻辑都不应该有改动。</p>
+<p>对我们Golang项目的具体指导意见应该是: </p>
+<blockquote>
+<p>Entity和Usecase层不应该有任何依赖，不应该import任何第三方package</p>
+</blockquote>
+<h3 id="Entity-Layer"><a href="#Entity-Layer" class="headerlink" title="Entity Layer"></a>Entity Layer</h3><p>此层应实现：Use Case中的entity，或者UML图中actor。</p>
+<p>用Golang术语来说，可以是核心数据struct及附带的方法，或者一系列的struct和functions。</p>
+<p>实现的是最核心，最抽象的商业逻辑，也一般是最不容易改动的部分。可以被其他层直接引用。</p>
+<h3 id="Usecase-Layer"><a href="#Usecase-Layer" class="headerlink" title="Usecase Layer"></a>Usecase Layer</h3><p>系统中所有Usecase实现，控制从entity流入，流出数据数据的过程。此层的改变一般不应引起entity的改动。</p>
+<p>我们的设计应该以Usecase为中心，Usecase Diagram绘制出来，Usecase以及entity就都有了。</p>
+<div align="center">
+
+</div>
+
+<p>关于什么是Usecase，请参考<a target="_blank" rel="noopener" href="http://www.plainionist.net/Implementing-Clean-Architecture-UseCases/">这里</a></p>
+<p>Usecase可以，类似面向对象的inheritance及combination，对应Usecase术语是include及extend</p>
+<h3 id="Interface-Adapters-Layer"><a href="#Interface-Adapters-Layer" class="headerlink" title="Interface Adapters Layer"></a>Interface Adapters Layer</h3><p>此层一般不会有太多代码，主要是起到在配接usecase层及最外层：转换两边的数据结构，使usecase依赖的数据结构与detail的数据结构解耦。</p>
+<p>Usecase层及最外detail层因此可以选择最适合各自层实现的数据结构，用本层简单转换一下就行。</p>
+<p>一个例子是，之前提到的anti-pattern，最外层数据结构直接反映了database的schema，经由本层转换，转换称为usecase层需要的数据结构。</p>
+<p>另一个例子是SQL，本质上我们可以认为其功能也是转换数据：从数据库到内存的golang数据结构，因此SQL应该在本层实现。</p>
+<p>Uncle Bob同时提到了MVC也全部应该在此层实现。</p>
+<h3 id="Frameworks-and-Drivers-Layer"><a href="#Frameworks-and-Drivers-Layer" class="headerlink" title="Frameworks and Drivers Layer"></a>Frameworks and Drivers Layer</h3><p>总之本层存放各种细节，framework，database，web等初始化。一般来说代码也不会太多。</p>
+<h3 id="A-Clean-Architecture-Layout-Example"><a href="#A-Clean-Architecture-Layout-Example" class="headerlink" title="A Clean Architecture Layout Example"></a>A Clean Architecture Layout Example</h3><div align="center">
+
+</div>
+
+<h2 id="Dependency-Injection"><a href="#Dependency-Injection" class="headerlink" title="Dependency Injection"></a>Dependency Injection</h2><p>在前一篇博客介绍Dependency Inversion的部分，我们已经知道invert dependency flow的重要性，dependency injection便是其最常用的实现方法。</p>
+<p>例如 A object需要call B，A是高层，B是细节，可以这样: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F; pseudo code in golang</span><br><span class="line">&#x2F;&#x2F; package A follows</span><br><span class="line">package A</span><br><span class="line">type A struct &#123;</span><br><span class="line">    b BInterface</span><br><span class="line">&#125;</span><br><span class="line">type BInterface interface&#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">&#x2F;&#x2F; package B follows</span><br><span class="line">&#x2F;&#x2F; struct B implement BInterface</span><br><span class="line">package B</span><br><span class="line">import &quot;A&quot;</span><br><span class="line">type B struct&#123;</span><br><span class="line">&#125;</span><br><span class="line">b :&#x3D; B&#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">a :&#x3D; &amp;A&#123;</span><br><span class="line">    b : b, &#x2F;&#x2F; inject object b into object a</span><br><span class="line">&#125;</span><br><span class="line">a.do() &#x2F;&#x2F; do function will call a.b </span><br></pre></td></tr></table></figure>
+
+<p>我们可以看到，a的实现并不需要创建object b，由外部模块，一般是main，来初始化b，并且<em>注入</em>到a中，从而解除A对B的依赖，实现了dependency inversion。</p>
+<h2 id="Demo-User-Registration"><a href="#Demo-User-Registration" class="headerlink" title="Demo: User Registration"></a>Demo: User Registration</h2><p>千言万语还是得归结于一个concrete sample，本节我们来通过实现一个简单的use case来了解如何应用clean architecture。</p>
+<p>这个有趣的例子请参见<a target="_blank" rel="noopener" href="https://medium.com/full-stack-tips/dependency-injection-in-go-99b09e2cc480">Dependency Injection In Go</a></p>
+<p>通过这里例子，我们可以看到一个最简单的用户注册的usecase，如何采用clean architecture的方法论来实现。用户注册本质上可以抽象为：</p>
+<ul>
+<li> validate新用户信息</li>
+<li> 存储新用户信息</li>
+</ul>
+<p>validate可以由我们的business来自己定义，如不允许用163邮箱用户，不允许座机只允许手机号码注册等，这个可以放在entity层实现。但是存储用户信息是细节，有可能存于mysql，或者redis，本地文件甚至只存于本机内存。存储方法应该由最外层来实现。</p>
+<h2 id="Pros-and-Cons"><a href="#Pros-and-Cons" class="headerlink" title="Pros and Cons"></a>Pros and Cons</h2><p>一图流</p>
+<div align="center">
+
+</div>
+
+<p>关于cons： </p>
+<ul>
+<li> 假如我们逻辑极为简单，也就没必要采用Clean Architecture的分层设计。</li>
+<li> 复用代码会导致不同模块耦合，所以解耦势必会产生一些”duplicate code”，比如usecase层会声明一个与database的schema(即表结构)非常类似的数据结构，看起来两个struct很像duplicate code，其实从Clean Architecture本质上来说，两层实现的模型本就不一样，虽然从代码上看着类似，但也不能复用，避免错误耦合。</li>
+</ul>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><p>个人对Clean Architecture思想是非常肯定及推崇的，UncleBob在推广它也花了不少功夫，有兴趣可以看他的视频演讲：<a target="_blank" rel="noopener" href="https://vimeo.com/43612849">这里</a>和<a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v=Nsjsiz2A9mg">这里</a>  </p>
+<p>然而不得不承认的是，UncleBob提出其已经过了7年，我并没有看到大规模的被采用的迹象，至少顶级的Golang Opensource Project的layout还是比较粗放随意的，不知道是曲高和寡还是当下更流行的小步快跑策略导致人们对传统软件架构理论不屑一顾？个人比较赞同在他处看到的一句话：互联网相对简单的业务逻辑(与传统软件相比)导致我们往往不需要复杂的架构也能解决问题。</p>
+<h2 id="More-reading-and-reference"><a href="#More-reading-and-reference" class="headerlink" title="More reading and reference"></a>More reading and reference</h2><p><a target="_blank" rel="noopener" href="https://github.com/mattia-battiston/clean-architecture-example#why-clean-architecture">Java example</a><br><a target="_blank" rel="noopener" href="https://www.slideshare.net/mattiabattiston/real-life-clean-architecture-61242830">Slide of realworld Java clean arch</a><br><a target="_blank" rel="noopener" href="https://medium.com/@stephanhoekstra/clean-architecture-in-net-8eed6c224c50">.Net Clean Architecture</a><br><a target="_blank" rel="noopener" href="http://www.plainionist.net/Implementing-Clean-Architecture-UseCases">The “Implementing Clean Architecture” series</a><br><a target="_blank" rel="noopener" href="https://blog.cleancoder.com/uncle-bob/2011/09/30/Screaming-Architecture.html">Screaming Architecture</a><br><a target="_blank" rel="noopener" href="https://herbertograca.com/2017/08/24/ebi-architecture/">EBI Architecture</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Architecure-golang/" rel="tag"># Architecure golang</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/03/29/Clean-Architecure-in-Go/" rel="prev" title="Clean Architecure in Go (1) The Introduction">
+                  <i class="fa fa-chevron-left"></i> Clean Architecure in Go (1) The Introduction
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/07/10/A-SSH-client-implemented-in-Golang/" rel="next" title="A Prod ready SSH client in Golang">
+                  A Prod ready SSH client in Golang <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

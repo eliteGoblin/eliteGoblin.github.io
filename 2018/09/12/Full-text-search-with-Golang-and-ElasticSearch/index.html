@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Preface搜索，对于很多项目来说非常重要，甚至是核心功能。常见的一种搜索形式是: 输入关键字组合，给出全系统中匹配或相似的1到多条信息(通常称之为1个document)。也称此为full-text search 。   企业FAQ系统，就可以用此思路搭建：用户输入问题，搜索出系统中和用户问题最相似的问题，然后给出已记录的标准答案；相当于计算机”理解“用户的疑问。实现时，既可以手工实现：用分词算">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Full-text search with Golang and ElasticSearch">
+<meta property="og:url" content="https://elitegoblin.github.io/2018/09/12/Full-text-search-with-Golang-and-ElasticSearch/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Preface搜索，对于很多项目来说非常重要，甚至是核心功能。常见的一种搜索形式是: 输入关键字组合，给出全系统中匹配或相似的1到多条信息(通常称之为1个document)。也称此为full-text search 。   企业FAQ系统，就可以用此思路搭建：用户输入问题，搜索出系统中和用户问题最相似的问题，然后给出已记录的标准答案；相当于计算机”理解“用户的疑问。实现时，既可以手工实现：用分词算">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-09-12T08:17:39.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="golang ElasticSearch">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2018/09/12/Full-text-search-with-Golang-and-ElasticSearch/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2018&#x2F;09&#x2F;12&#x2F;Full-text-search-with-Golang-and-ElasticSearch&#x2F;&quot;,&quot;path&quot;:&quot;2018&#x2F;09&#x2F;12&#x2F;Full-text-search-with-Golang-and-ElasticSearch&#x2F;&quot;,&quot;title&quot;:&quot;Full-text search with Golang and ElasticSearch&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Full-text search with Golang and ElasticSearch | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E6%A0%87"><span class="nav-number">2.</span> <span class="nav-text">目标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A2%98%E7%9B%AE%E6%80%9D%E8%80%83"><span class="nav-number">3.</span> <span class="nav-text">题目思考</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ElasticSearch%E6%96%B9%E6%A1%88%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.</span> <span class="nav-text">ElasticSearch方案实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA"><span class="nav-number">4.1.</span> <span class="nav-text">环境搭建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ElasticSearch-Client-Library"><span class="nav-number">4.2.</span> <span class="nav-text">ElasticSearch Client Library</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BB%BA%E7%AB%8B%E7%A9%BA%E7%B4%A2%E5%BC%95"><span class="nav-number">4.3.</span> <span class="nav-text">建立空索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Upsert-Document"><span class="nav-number">4.4.</span> <span class="nav-text">Upsert Document</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E6%89%BEDocument"><span class="nav-number">4.5.</span> <span class="nav-text">查找Document</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%90%E5%8F%96query-result"><span class="nav-number">4.6.</span> <span class="nav-text">提取query result</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA"><span class="nav-number">5.</span> <span class="nav-text">结论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-number">6.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2018/09/12/Full-text-search-with-Golang-and-ElasticSearch/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Full-text search with Golang and ElasticSearch
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-09-12 16:17:39" itemprop="dateCreated datePublished" datetime="2018-09-12T16:17:39+08:00">2018-09-12</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>搜索，对于很多项目来说非常重要，甚至是核心功能。常见的一种搜索形式是: 输入关键字组合，给出全系统中匹配或相似的1到多条信息(通常称之为1个document)。也称此为full-text search 。  </p>
+<p>企业FAQ系统，就可以用此思路搭建：用户输入问题，搜索出系统中和用户问题最相似的问题，然后给出已记录的标准答案；相当于计算机”<em>理解</em>“用户的疑问。实现时，既可以手工实现：用分词算法切割用户输入的自然语言，得到关键词数组，用bm25算法，根据词频计算用户问题和系统FAQ问题的相似度，排序之后给出推荐；或者采用开源解决方案，ElasticSearch就是其中被广为采纳的一个。  </p>
+<p>之前在悉尼找工作时，正好一家media公司给出的编程题便是用Golang搭建文本搜索系统，当时研究了一下ElasticSearch，给出了解决方案；于是就把这个有趣的经历记录下来。</p>
+<div align="center">
+
+</div>
+
+<span id="more"></span>
+
+<h2 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h2><ul>
+<li>实现article的简单”<em>增改查</em>“系统，article的json格式:   <figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Article <span class="keyword">struct</span> &#123;</span><br><span class="line">    Id <span class="keyword">string</span>       <span class="string">`json:&quot;id&quot;`</span></span><br><span class="line">    Title <span class="keyword">string</span>    <span class="string">`json:&quot;title&quot;`</span></span><br><span class="line">    Date <span class="keyword">string</span>     <span class="string">`json:&quot;date&quot;`</span></span><br><span class="line">    Body <span class="keyword">string</span>     <span class="string">`json:&quot;body&quot;`</span></span><br><span class="line">    Tags []<span class="keyword">string</span>   <span class="string">`json:&quot;tags&quot;`</span></span><br><span class="line">    CreatedTime <span class="keyword">string</span> <span class="string">`json:&quot;created_time&quot;`</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li>按ID查找article:   <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GET &#x2F;articles&#x2F;&#123;article_id&#125;</span><br></pre></td></tr></table></figure></li>
+<li>Upsert(Update+Insert)操作  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">POST &#x2F;articles</span><br></pre></td></tr></table></figure></li>
+<li>指定日期，tag查询articles  <figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">GET /tags/&#123;tag_name&#125;/&#123;date&#125;</span><br><span class="line"><span class="comment">// 返回</span></span><br><span class="line"><span class="keyword">type</span> SearchByTagResult <span class="keyword">struct</span> &#123;</span><br><span class="line">    Tag <span class="keyword">string</span>              <span class="string">`json:&quot;tag&quot;`</span></span><br><span class="line">    Count <span class="keyword">int</span>               <span class="string">`json:&quot;count&quot;`</span></span><br><span class="line">    Articles []<span class="keyword">string</span>       <span class="string">`json:&quot;articles&quot;`</span></span><br><span class="line">    RelatedTags []<span class="keyword">string</span>    <span class="string">`json:&quot;related_tags&quot;`</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li> Tag: 查询的Tag</li>
+<li> Count: 命中的Article数目</li>
+<li> Articles: 命中的article id数组</li>
+<li> RelatedTags: 命中的所有article的所有tag的集合(不包括查询的tag)</li>
+</ul>
+</li>
+</ul>
+<h2 id="题目思考"><a href="#题目思考" class="headerlink" title="题目思考"></a>题目思考</h2><p>article的增改实现很trival，真正需要考虑的是查询如何实现；</p>
+<p>不考虑第三方组件:  </p>
+<ul>
+<li> 需要按照tag, 和date两个维度过滤article</li>
+<li> 用map等实现自己的索引，得到需要的结果集</li>
+</ul>
+<p>得出的解决方案，扩展性差：如果想增加过滤条件，如create_time等，需要较大的索引结构改动，于是想到用ElasticSearch来为article建立索引，用其query功能得到article结果集合，然后提取题目要求的结果信息。</p>
+<p>完整的项目代码在这里: <a target="_blank" rel="noopener" href="https://github.com/eliteGoblin/code_4_blog/tree/master/article_api">article_api</a></p>
+<h2 id="ElasticSearch方案实现"><a href="#ElasticSearch方案实现" class="headerlink" title="ElasticSearch方案实现"></a>ElasticSearch方案实现</h2><h3 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h3><p>最portable的方式就是将其放入容器，这也是题目要求的，在reviewer的机器上，以最少的步骤跑起来。ES和golang app各占一个container, 用docker-compose(简单容器编排工具)，实现container的启动及网络互连:  </p>
+<p>docker-compose.yml</p>
+<figure class="highlight yml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&#x27;3.5&#x27;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">search_api:</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">&#x27;article_api&#x27;</span></span><br><span class="line">    <span class="attr">build:</span> <span class="string">&#x27;./fairfax&#x27;</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">&#x27;on-failure&#x27;</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;8080:8080&#x27;</span></span><br><span class="line">    <span class="attr">depends_on:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">elasticsearch</span></span><br><span class="line">  <span class="attr">elasticsearch:</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">&#x27;elasticsearch&#x27;</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">&#x27;docker.elastic.co/elasticsearch/elasticsearch:6.2.3&#x27;</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;9200:9200&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<p>说明:  </p>
+<ul>
+<li> 完整运行环境由service组成：search_api为golang app, 另一个是ElasticsSearch</li>
+<li> golang app没有预先build好的image，build指定包含其Dockerfile的目录</li>
+<li> 两个container处于同一网段，通过<service_name>:port方式访问别的service</li>
+</ul>
+<h3 id="ElasticSearch-Client-Library"><a href="#ElasticSearch-Client-Library" class="headerlink" title="ElasticSearch Client Library"></a>ElasticSearch Client Library</h3><p>首先考虑如何在Golang中访问ES，采用<a target="_blank" rel="noopener" href="https://github.com/olivere/elastic">olivere/elastic</a>作为client library, star 2900+。</p>
+<p>连接ElasticSearch:  </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> <span class="string">&quot;github.com/olivere/elastic&quot;</span></span><br><span class="line">client, err := elastic.NewClient(</span><br><span class="line">                elastic.SetURL(<span class="string">&quot;http://elasticsearch:9200&quot;</span>),</span><br><span class="line">                elastic.SetSniff(<span class="literal">false</span>),</span><br><span class="line">            )</span><br></pre></td></tr></table></figure>
+
+<h3 id="建立空索引"><a href="#建立空索引" class="headerlink" title="建立空索引"></a>建立空索引</h3><figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">_, err = client.CreateIndex(<span class="string">&quot;article&quot;</span>).Do(context.Background())</span><br></pre></td></tr></table></figure>
+
+<h3 id="Upsert-Document"><a href="#Upsert-Document" class="headerlink" title="Upsert Document"></a>Upsert Document</h3><figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Article为json格式，代表document，见代码定义</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(selfPtr *ESDb)</span><span class="title">AddDocToDb</span><span class="params">(article *core.Article)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    _, err := selfPtr.esClient.Index().</span><br><span class="line">        Index(<span class="string">&quot;article&quot;</span>).</span><br><span class="line">        Type(<span class="string">&quot;doc&quot;</span>).</span><br><span class="line">        Id(article.Id).</span><br><span class="line">        BodyJson(article).</span><br><span class="line">        Refresh(<span class="string">&quot;wait_for&quot;</span>).</span><br><span class="line">        Do(context.Background())</span><br><span class="line">    <span class="keyword">return</span> err</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="查找Document"><a href="#查找Document" class="headerlink" title="查找Document"></a>查找Document</h3><figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(selfPtr *ESDb)</span><span class="title">SearchByTag</span><span class="params">(tag <span class="keyword">string</span>, date <span class="keyword">string</span>)</span> <span class="params">(res *SearchByTagResult, err error)</span></span>&#123;</span><br><span class="line">    query := elastic.NewBoolQuery()</span><br><span class="line">    q1 := elastic.NewTermsQuery(<span class="string">&quot;tags&quot;</span>, tag)</span><br><span class="line">    q2 := elastic.NewMatchQuery(<span class="string">&quot;date&quot;</span>, date)</span><br><span class="line">    query.Must(q1, q2)</span><br><span class="line"></span><br><span class="line">    searchResult, err := selfPtr.esClient.Search().</span><br><span class="line">        Index(<span class="string">&quot;article&quot;</span>).                   <span class="comment">// search in index &quot;article&quot;</span></span><br><span class="line">        Query(query).                               <span class="comment">// specify the query</span></span><br><span class="line">        Pretty(<span class="literal">true</span>).                       <span class="comment">// pretty print request and response JSON</span></span><br><span class="line">        Sort(<span class="string">&quot;created_time.keyword&quot;</span>, <span class="literal">false</span>).    <span class="comment">// sort by &quot;id&quot; field, ascending</span></span><br><span class="line">        Do(context.Background())                    <span class="comment">// execute</span></span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li> 用多个子query合并成一个bool query的方式实现”与”的操作</li>
+<li> Sort排序</li>
+</ul>
+<h3 id="提取query-result"><a href="#提取query-result" class="headerlink" title="提取query result"></a>提取query result</h3><figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// core.Article是自己定义的document的golang struct</span></span><br><span class="line"><span class="keyword">var</span> esItem core.Article</span><br><span class="line"><span class="keyword">for</span> _, item := <span class="keyword">range</span> searchResult.Each(reflect.TypeOf(esItem)) &#123;</span><br><span class="line">    <span class="keyword">if</span> t, ok := item.(core.Article); ok &#123;</span><br><span class="line">        <span class="keyword">return</span> &amp;t, <span class="literal">nil</span> <span class="comment">// 返回匹配到的第一条Document</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>本文搭建了Golang+ElasticSearch环境，并实现了简单的增改查功能(主要代码来自于[reference2][How to Build a Search Service with Go and Elasticsearch])。ElasticSearch由于其强大的搜索及集群方案已经普遍用在全文搜索，FAQ，及日志分析的ELK Stack等解决方案中，值得进一步深入学习。</p>
+<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><p><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Full-text_search">Full-text search</a><br><a target="_blank" rel="noopener" href="https://outcrawl.com/go-elastic-search-service/">How to Build a Search Service with Go and Elasticsearch</a><br><a target="_blank" rel="noopener" href="http://www.ruanyifeng.com/blog/2013/03/tf-idf.html">TF-IDF与余弦相似性的应用（一）：自动提取关键词</a><br><a target="_blank" rel="noopener" href="http://www.ruanyifeng.com/blog/2013/03/cosine_similarity.html">TF-IDF与余弦相似性的应用（二）：找出相似文章</a>  </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/golang-ElasticSearch/" rel="tag"># golang ElasticSearch</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2018/08/20/HTTP-parameter-passing-in-Golang/" rel="prev" title="HTTP parameter passing in Golang">
+                  <i class="fa fa-chevron-left"></i> HTTP parameter passing in Golang
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/09/17/Mind-Mapping-of-Book-Ansible-Up-and-Running/" rel="next" title="Mind Mapping of Book: Ansible Up and Running">
+                  Mind Mapping of Book: Ansible Up and Running <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

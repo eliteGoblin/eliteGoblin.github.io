@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Preface在生活中，常会遇到根据优先级分配资源的问题，简单讲就是插队:    登机: 根据舱位决定登机顺序，头等舱&#x2F;商务舱先登机，不受到达顺序影响  银行: VIP优先获得服务  急诊室: 根据病情严重程度决定就诊顺序  等等，在开发中，需要用到优先队列解决排队问题，这是一种非常有用的数据结构。 c++内置优先队列可以直接拿来用，如:  123std::priority_queue&amp;l">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Using Heap in Golang">
+<meta property="og:url" content="https://elitegoblin.github.io/2019/10/10/Using-Heap-in-Golang/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Preface在生活中，常会遇到根据优先级分配资源的问题，简单讲就是插队:    登机: 根据舱位决定登机顺序，头等舱&#x2F;商务舱先登机，不受到达顺序影响  银行: VIP优先获得服务  急诊室: 根据病情严重程度决定就诊顺序  等等，在开发中，需要用到优先队列解决排队问题，这是一种非常有用的数据结构。 c++内置优先队列可以直接拿来用，如:  123std::priority_queue&amp;l">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-10-10T09:04:28.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="golang">
+<meta property="article:tag" content="heap">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2019/10/10/Using-Heap-in-Golang/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2019&#x2F;10&#x2F;10&#x2F;Using-Heap-in-Golang&#x2F;&quot;,&quot;path&quot;:&quot;2019&#x2F;10&#x2F;10&#x2F;Using-Heap-in-Golang&#x2F;&quot;,&quot;title&quot;:&quot;Using Heap in Golang&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Using Heap in Golang | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E5%BF%B5%E5%88%86%E8%BE%A8"><span class="nav-number">2.</span> <span class="nav-text">概念分辨</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ADT-Priority-Queue"><span class="nav-number">3.</span> <span class="nav-text">ADT: Priority Queue</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Heap-Internal"><span class="nav-number">4.</span> <span class="nav-text">Heap Internal</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Heap-Support-in-Golang"><span class="nav-number">5.</span> <span class="nav-text">Heap Support in Golang</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Implement-a-heap-in-Golang"><span class="nav-number">6.</span> <span class="nav-text">Implement a heap in Golang</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Use-heap"><span class="nav-number">7.</span> <span class="nav-text">Use heap</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Update-element-in-heap"><span class="nav-number">8.</span> <span class="nav-text">Update element in heap</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2019/10/10/Using-Heap-in-Golang/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Using Heap in Golang
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-10-10 17:04:28" itemprop="dateCreated datePublished" datetime="2019-10-10T17:04:28+08:00">2019-10-10</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <div align="center">
+
+</div>
+
+<h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>在生活中，常会遇到根据优先级分配资源的问题，简单讲就是插队: </p>
+<ul>
+<li> 登机: 根据舱位决定登机顺序，头等舱/商务舱先登机，不受到达顺序影响</li>
+<li> 银行: VIP优先获得服务</li>
+<li> 急诊室: 根据病情严重程度决定就诊顺序</li>
+</ul>
+<p>等等，在开发中，需要用到优先队列解决排队问题，这是一种非常有用的数据结构。</p>
+<p>c++内置优先队列可以直接拿来用，如: </p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">std::priority_queue&lt;<span class="keyword">int</span>&gt; pq;</span><br><span class="line">pq.<span class="built_in">push</span>(<span class="number">2</span>);</span><br><span class="line">pq.<span class="built_in">pop</span>();</span><br></pre></td></tr></table></figure>
+
+<p>因为Golang中没有泛型支持，实现heap有点tricky，我们来一起看看吧。</p>
+<span id="more"></span>
+
+<h2 id="概念分辨"><a href="#概念分辨" class="headerlink" title="概念分辨"></a>概念分辨</h2><p>Golang给我们提供了”container/heap”，并没有priority queue package，这两者是什么关系呢？ 在课本中，我们学过用近似完全二叉树实现的binary heap, 那么再加上binary heap, tree，这四者究竟是什么关系呢？</p>
+<p>可能很多小伙伴看到这里已经不耐烦的点关闭了: 我就想知道怎么实现priority queue, show me the code! 说这么多没用的干嘛？  </p>
+<p>这里涉及到一个我非常认同的学习方法：整体学习法，建立结构性知识[^1]，广泛的建立起知识间的连接，这样才能加深理解，就不必每次用完就搁置，下次用再得从头看起啦。</p>
+<p>一图胜千言 [^2]</p>
+<div align="center">
+
+</div>
+
+<blockquote>
+<p>A heap is a specialized tree-based data structure which is essentially an almost complete tree that satisfies the heap property[^3]</p>
+</blockquote>
+<p>Binary Heap是heap的一种实现，所有的heap都是tree的特殊形式(满足heap property)。</p>
+<p>那和我们最终需要的priority queue究竟是什么关系呢？</p>
+<blockquote>
+<p>The heap is one maximally efficient implementation of an abstract data type called a priority queue[^3]</p>
+</blockquote>
+<p>Heap只是priority queue(以下简称PQ)的一种实现罢了。 PQ作为一个抽象数据类型(ADT)，只要实现满足PQ的方法即可。</p>
+<p>在Golang中，也同样内置了heap package来实现PQ。</p>
+<h2 id="ADT-Priority-Queue"><a href="#ADT-Priority-Queue" class="headerlink" title="ADT: Priority Queue"></a>ADT: Priority Queue</h2><p>PQ最基本的操作是push和pop: </p>
+<ul>
+<li> Push: 向PQ插入元素，并自动排序</li>
+<li> Pop: 从PQ头部弹出元素，并保证剩余元素仍有序</li>
+</ul>
+<p>有些情况需要动态改变优先级，需要Update方法</p>
+<p>本文的目标便是用heap package来实现PQ。</p>
+<h2 id="Heap-Internal"><a href="#Heap-Internal" class="headerlink" title="Heap Internal"></a>Heap Internal</h2><p>简单对binary heap的实现做下回顾, binary heap其实是complete binary tree, 关于full, complete, perfect binary tree的区别，可以看这里[^4]。</p>
+<p>如下便是一个complete binary tree: </p>
+<div align="center">
+
+</div>
+
+<p>它有如下性质: </p>
+<ul>
+<li> 从左向右依次排列，可以用数组实现</li>
+<li>root index从0开始, 任何node i有:<ul>
+<li> parent index: └(i-1)/2┘</li>
+<li> left child: $2*i + 1$</li>
+<li> right child: $2*i + 2$</li>
+</ul>
+</li>
+</ul>
+<p>可以看出它的特点: 实现简单，可以找child, parent节点。</p>
+<p>array中存储的是heap的level order traversal: </p>
+<div align="center">
+
+</div>
+
+<p>Binary heap同样遵循heap property: 节点”优先级”都比子树的高，因此每次pop都是取头节点。取决有优先级定义: 数值小优先级高的就是小顶堆，反之则是大顶堆。</p>
+<p>这里有一个形象的比喻：叠罗汉是小顶堆[^5]，缅怀这篇文章作者，有趣的Vamei大神，请见文章开篇的图片。</p>
+<p>叠罗汉就是一个堆, 图中有三个堆，优先级是人的体重，体重最轻的在顶端，它是小顶堆。</p>
+<p>Heap最基本的函数:</p>
+<ul>
+<li>Build: 初始建heap, $O(n)$</li>
+<li>Push: 插入新元素，自动排序 $O(log(n))$</li>
+<li>Pop: 弹出root元素，并使剩余元素扔保持heap property $O(log(n))$</li>
+</ul>
+<h2 id="Heap-Support-in-Golang"><a href="#Heap-Support-in-Golang" class="headerlink" title="Heap Support in Golang"></a>Heap Support in Golang</h2><p>Golang在”container/heap” package中实现了heap。由于没有泛型的支持，假设基本元素是int, float, struct的三个堆，如果想复用heap代码，只能是通过interface标准化一些操作，让这些差异的操作由用户实现。</p>
+<p>Golang heap.Interface封装了差异操作:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Interface <span class="keyword">interface</span> &#123;</span><br><span class="line">    sort.Interface</span><br><span class="line">    Push(x <span class="keyword">interface</span>&#123;&#125;) <span class="comment">// add x as element Len()</span></span><br><span class="line">    Pop() <span class="keyword">interface</span>&#123;&#125;   <span class="comment">// remove and return element Len() - 1.</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>sort.Interface需要我们提供的slice，实现另一个interface，果然是麻烦啊。</p>
+<p>基于heap.Interface, heap package提供了我们上节提到的heap基本函数:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 建堆</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Init</span><span class="params">(h Interface)</span></span></span><br><span class="line"><span class="comment">// 插入元素</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Push</span><span class="params">(h Interface, x <span class="keyword">interface</span>&#123;&#125;)</span></span></span><br><span class="line"><span class="comment">// 弹出root元素</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Pop</span><span class="params">(h Interface)</span> <span class="title">interface</span></span>&#123;&#125;</span><br><span class="line"><span class="comment">// Update元素(包括优先级)</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Fix</span><span class="params">(h Interface, i <span class="keyword">int</span>)</span></span></span><br><span class="line"><span class="comment">// 删除</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Remove</span><span class="params">(h Interface, i <span class="keyword">int</span>)</span> <span class="title">interface</span></span>&#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里值得注意的是不要混淆heap.Push和自己slice实现的Push函数，自己Push仅仅是slice操作，而heap.Push调用了slice的Push操作，还需要额外操作维护heap property。</p>
+<h2 id="Implement-a-heap-in-Golang"><a href="#Implement-a-heap-in-Golang" class="headerlink" title="Implement a heap in Golang"></a>Implement a heap in Golang</h2><p>我们知道了Golang中使用了heap的套路：并不能直接拿来用，而是需要先实现heap.Interface和其中嵌套的sort.Interface，没有generic，很多地方会比较繁琐。但generic又使语言很快变得复杂难懂，果然trade-off无处不在啊，engineer都是天生纠结的命。</p>
+<p>这里先看一下我的实现，采用了interface{}作为元素基本类型，可以同时兼容不同类型的元素，用interface{}来替代generic是常用套路。这里需要另外传入一个predicate，类似STL的自定义比较函数，可以通过传入自定义函数来实现对不同数据类型的比较,包括heap of objects，也能在大，小顶堆之间切换，只要改变判断结果即可。</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> myHeap <span class="keyword">struct</span> &#123;</span><br><span class="line">    data      []<span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">    predicate <span class="function"><span class="keyword">func</span><span class="params">(x, y <span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">bool</span></span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">NewHeap</span><span class="params">(data []<span class="keyword">interface</span>&#123;&#125;, predicate <span class="keyword">func</span>(x, y <span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">bool</span>) *<span class="title">myHeap</span></span> &#123;</span><br><span class="line">    hp := &amp;myHeap&#123;</span><br><span class="line">        data:      data,</span><br><span class="line">        predicate: predicate,</span><br><span class="line">    &#125;</span><br><span class="line">    heap.Init(hp)</span><br><span class="line">    <span class="keyword">return</span> hp</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h myHeap)</span> <span class="title">Len</span><span class="params">()</span> <span class="title">int</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(h.data)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h myHeap)</span> <span class="title">Swap</span><span class="params">(i, j <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">    h.data[i], h.data[j] = h.data[j], h.data[i]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h myHeap)</span> <span class="title">Less</span><span class="params">(i, j <span class="keyword">int</span>)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> h.predicate(h.data[i], h.data[j])</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h *myHeap)</span> <span class="title">Push</span><span class="params">(x <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">    h.data = <span class="built_in">append</span>(h.data, x)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(h *myHeap)</span> <span class="title">Pop</span><span class="params">()</span> <span class="title">interface</span></span>&#123;&#125; &#123;</span><br><span class="line">    <span class="built_in">len</span> := <span class="built_in">len</span>(h.data)</span><br><span class="line">    x := h.data[<span class="built_in">len</span><span class="number">-1</span>]</span><br><span class="line">    h.data = h.data[:<span class="built_in">len</span><span class="number">-1</span>]</span><br><span class="line">    <span class="keyword">return</span> x</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>有了以上模板可以套用，因为interface{}可以指向任何类型。实现heap的关键就变成了实现predicate 函数:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span><span class="params">(x, y <span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">bool</span></span></span><br></pre></td></tr></table></figure>
+
+<p>当x比y的优先级高时(意味着在数组中x将排在y前面)，返回true。</p>
+<p>因此小顶堆，小数获得高优先级，即 return x &lt; y；大顶堆，大数获得高优先级，即 return x &gt; y;</p>
+<h2 id="Use-heap"><a href="#Use-heap" class="headerlink" title="Use heap"></a>Use heap</h2><p>我们接下来看下如何用我们的模板实现heap：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">&quot;fmt&quot;</span></span><br><span class="line">    <span class="string">&quot;container/heap&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    intHeap := NewHeap([]<span class="keyword">interface</span>&#123;&#125;&#123;<span class="number">3</span>,<span class="number">1</span>,<span class="number">2</span>&#125;,</span><br><span class="line">    <span class="function"><span class="keyword">func</span><span class="params">(x, y <span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">        <span class="keyword">return</span> x.(<span class="keyword">int</span>) &lt; y.(<span class="keyword">int</span>)</span><br><span class="line">    &#125;)</span><br><span class="line">    heap.Init(intHeap)</span><br><span class="line">    fmt.Println(intHeap)</span><br><span class="line">    <span class="comment">// [1 3 2]</span></span><br><span class="line">    heap.Push(intHeap, <span class="number">0</span>)</span><br><span class="line">    fmt.Println(intHeap)</span><br><span class="line">    <span class="comment">// [0 1 2 3]</span></span><br><span class="line">    <span class="keyword">for</span> intHeap.Len() &gt; <span class="number">0</span> &#123;</span><br><span class="line">      fmt.Printf(<span class="string">&quot;%+v &quot;</span>, heap.Pop(intHeap)) <span class="comment">//注意别写成 intHeap.Pop()</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 0 1 2 3 </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在 <code>heap.Init(intHeap)</code> 之后，我们构建了heap: </p>
+<div align="center">
+
+</div>
+
+<p>注意到slice中的值正是tree的level traversal结果。同时可看到push和pop均符合预期。push得到一个新的heap: </p>
+<div align="center">
+
+</div>
+
+<p>回顾heap的push过程，是将新元素放在slice末尾，同时不断将其上升至root的过程。</p>
+<h2 id="Update-element-in-heap"><a href="#Update-element-in-heap" class="headerlink" title="Update element in heap"></a>Update element in heap</h2><p>有时候能动态调整heap中元素的优先级会很有用，heap package提供了fix函数: </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Fix</span><span class="params">(h Interface, i <span class="keyword">int</span>)</span></span></span><br></pre></td></tr></table></figure>
+
+<p>i为被调整元素的index, 我们需要先调整slice处于i位置的元素，然后调用此函数以维持heap property: </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">intHeap.data = []<span class="keyword">interface</span>&#123;&#125;&#123;<span class="number">1</span>,<span class="number">3</span>,<span class="number">2</span>&#125; <span class="comment">//初始化heap</span></span><br><span class="line">heap.Init(intHeap)</span><br><span class="line">intHeap.data[<span class="number">1</span>] = <span class="number">-1</span>  <span class="comment">// update 1 -&gt; 9</span></span><br><span class="line">heap.Fix(intHeap, <span class="number">1</span>)  <span class="comment">// 需要知道update元素的index</span></span><br><span class="line">fmt.Println(intHeap)  <span class="comment">// [-1 1 2]</span></span><br></pre></td></tr></table></figure>
+
+<p>但在实际中，我们并不能知道我们要调整元素的index，因为index是在随着元素的push和pop不断的变化，因此就需要记录在元素内部，同时在swap元素时维护index的最新值，只要我们有元素的指针，就可以实现动态update元素的优先级。</p>
+<p>完整的例子见<a target="_blank" rel="noopener" href="https://golang.org/pkg/container/heap/#example__priorityQueue">heap doc</a>，同时上面示例代码在<a target="_blank" rel="noopener" href="https://play.golang.org/p/NP0x2zhwBi8">golang playground</a></p>
+<p>[^1]: Young, S. (n.d.). Learn more study less.<br>[^2]: <a target="_blank" rel="noopener" href="https://www.zhihu.com/question/36134980">堆和树有什么区别？堆为什么要叫堆，不叫树呢？</a><br>[^3]: <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Heap_(data_structure)">Heap (data structure)</a><br>[^4]: <a target="_blank" rel="noopener" href="https://www.cnblogs.com/idorax/p/6441043.html">完美二叉树, 完全二叉树和完满二叉树</a><br>[^5]: <a target="_blank" rel="noopener" href="https://www.cnblogs.com/vamei/archive/2013/03/20/2966612.html">纸上谈兵: 堆 (heap)</a><br>[^6]: <a target="_blank" rel="noopener" href="https://www.geeksforgeeks.org/binary-heap/">binary heap</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/golang/" rel="tag"># golang</a>
+              <a href="/tags/heap/" rel="tag"># heap</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/10/09/Use-git-project-board-to-track-your-own-projects/" rel="prev" title="Use git project board to track your own projects">
+                  <i class="fa fa-chevron-left"></i> Use git project board to track your own projects
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/10/25/Ports-forwarding-Basic-in-K8s/" rel="next" title="Ports forwarding Basic in K8s">
+                  Ports forwarding Basic in K8s <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

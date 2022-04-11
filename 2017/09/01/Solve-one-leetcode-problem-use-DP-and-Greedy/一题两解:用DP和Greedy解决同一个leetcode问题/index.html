@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="PrefaceDP(Dynamic Programming)和Greedy算法，区别于具体的算法，是algorithm paradigm，可称为算法思想，被用来求Optimization类问题，这类问题用一般方法解决起来颇有难度，而且常常复杂度太高。DP和Greedy会让不熟悉的同学有所畏惧。 DP和Greedy都需要专题性的练习，本文由一道具体的题引出DP和Greedy解法，读者可以基于">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一题两解:一道leetcode问题的DP和Greedy解法">
+<meta property="og:url" content="https://elitegoblin.github.io/2017/09/01/Solve-one-leetcode-problem-use-DP-and-Greedy/%E4%B8%80%E9%A2%98%E4%B8%A4%E8%A7%A3:%E7%94%A8DP%E5%92%8CGreedy%E8%A7%A3%E5%86%B3%E5%90%8C%E4%B8%80%E4%B8%AAleetcode%E9%97%AE%E9%A2%98/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="PrefaceDP(Dynamic Programming)和Greedy算法，区别于具体的算法，是algorithm paradigm，可称为算法思想，被用来求Optimization类问题，这类问题用一般方法解决起来颇有难度，而且常常复杂度太高。DP和Greedy会让不熟悉的同学有所畏惧。 DP和Greedy都需要专题性的练习，本文由一道具体的题引出DP和Greedy解法，读者可以基于">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2017-09-01T08:12:32.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.285Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="algorithms">
+<meta property="article:tag" content="leetcode">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2017/09/01/Solve-one-leetcode-problem-use-DP-and-Greedy/%E4%B8%80%E9%A2%98%E4%B8%A4%E8%A7%A3:%E7%94%A8DP%E5%92%8CGreedy%E8%A7%A3%E5%86%B3%E5%90%8C%E4%B8%80%E4%B8%AAleetcode%E9%97%AE%E9%A2%98/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2017&#x2F;09&#x2F;01&#x2F;Solve-one-leetcode-problem-use-DP-and-Greedy&#x2F;%E4%B8%80%E9%A2%98%E4%B8%A4%E8%A7%A3:%E7%94%A8DP%E5%92%8CGreedy%E8%A7%A3%E5%86%B3%E5%90%8C%E4%B8%80%E4%B8%AAleetcode%E9%97%AE%E9%A2%98&#x2F;&quot;,&quot;path&quot;:&quot;2017&#x2F;09&#x2F;01&#x2F;Solve-one-leetcode-problem-use-DP-and-Greedy&#x2F;一题两解:用DP和Greedy解决同一个leetcode问题&#x2F;&quot;,&quot;title&quot;:&quot;一题两解:一道leetcode问题的DP和Greedy解法&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>一题两解:一道leetcode问题的DP和Greedy解法 | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%AD%A6%E4%B9%A0DP%E5%92%8CGreedy"><span class="nav-number">2.</span> <span class="nav-text">为什么要学习DP和Greedy?</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%95%E5%AD%90%EF%BC%9A%E4%B8%80%E9%81%93leetcode%E9%A2%98%E7%9B%AE"><span class="nav-number">3.</span> <span class="nav-text">引子：一道leetcode题目</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#DP%E5%88%9D%E6%AD%A5%E5%8F%8A%E8%A7%A3%E6%B3%95"><span class="nav-number">4.</span> <span class="nav-text">DP初步及解法</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#DP%E7%AE%80%E4%BB%8B"><span class="nav-number">4.1.</span> <span class="nav-text">DP简介</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#DP%E8%A7%A3%E6%B3%95"><span class="nav-number">4.2.</span> <span class="nav-text">DP解法</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Greedy%E5%88%9D%E6%AD%A5%E5%8F%8A%E8%A7%A3%E6%B3%95"><span class="nav-number">5.</span> <span class="nav-text">Greedy初步及解法</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Greedy%E5%88%9D%E6%AD%A5"><span class="nav-number">5.1.</span> <span class="nav-text">Greedy初步</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Greedy%E8%A7%A3%E6%B3%95"><span class="nav-number">5.2.</span> <span class="nav-text">Greedy解法</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88Greedy%E5%92%8CDP%E5%AF%B9pair%E6%95%B0%E7%BB%84%E6%8E%92%E5%BA%8F%E6%96%B9%E5%BC%8F%E4%B8%8D%E4%B8%80%E6%A0%B7"><span class="nav-number">6.</span> <span class="nav-text">为什么Greedy和DP对pair数组排序方式不一样</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#DP%E5%92%8CGreedy%E5%BA%94%E7%94%A8%E4%B8%BE%E4%BE%8B"><span class="nav-number">7.</span> <span class="nav-text">DP和Greedy应用举例
+DP
+string algorithms
+  longest common subsequence
+  longest increasing subsequence
+  longest common substring
+  Levenshtein distance 
+
+
+ 0-1 knapsack
+ Bellman–Ford algorithm
+ Floyd’s all-pairs shortest path algorithm
+ travelling salesman problem
+
+
+Greedy
+ Kruskal’s Minimum Spanning Tree (MST)
+ Prim’s Minimum Spanning Tree
+ Dijkstra’s Shortest Path
+ Huffman Coding
+ Activity Selection problem(本题变种，基本一样)
+ fractional knapsack
+
+
+
+较全的DP应用场景见这里
+结语本文是笔者学习DP和Greedy算法的一个引子，今后会安排时间依着Sedgewick的Algorithms一书以及geekforgeek的题集系列继续深入学习
+在接近完成本文时，看到了知乎上的问题，提到DP的本质是状态转移方程，颇有道理，之后随着对DP的理解加深会持续更正本文，或新开文章讨论。
+学习是一个循序渐进的过程。一点心得分享给大家：
+
+克服了对“难题”的畏惧，也就解决了难题的大半
+
+参考文献什么是动态规划？动态规划的意义是什么？
+Dynamic Programming | Set 20 (Maximum Length Chain of Pairs)
+Greedy Algorithms | Set 1 (Activity Selection Problem)
+</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#algo_dp_greedy_algoindex"><span class="nav-number">8.</span> <span class="nav-text">DP和Greedy应用举例</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%93%E8%AF%AD"><span class="nav-number">9.</span> <span class="nav-text">结语</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">10.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2017/09/01/Solve-one-leetcode-problem-use-DP-and-Greedy/%E4%B8%80%E9%A2%98%E4%B8%A4%E8%A7%A3:%E7%94%A8DP%E5%92%8CGreedy%E8%A7%A3%E5%86%B3%E5%90%8C%E4%B8%80%E4%B8%AAleetcode%E9%97%AE%E9%A2%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          一题两解:一道leetcode问题的DP和Greedy解法
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2017-09-01 16:12:32" itemprop="dateCreated datePublished" datetime="2017-09-01T16:12:32+08:00">2017-09-01</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <div align="center">
+
+</div>
+
+<h4 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h4><p>DP(Dynamic Programming)和Greedy算法，区别于具体的算法，是algorithm paradigm，可称为算法思想，被用来求Optimization类问题，这类问题用一般方法解决起来颇有难度，而且常常复杂度太高。DP和Greedy会让不熟悉的同学有所畏惧。</p>
+<p>DP和Greedy都需要专题性的练习，本文由一道具体的题引出DP和Greedy解法，读者可以基于这个具体的问题来了解两种算法思想的应用，以及对比两者对于解决同一道题目的不同，加深对两者应用场景的认识</p>
+<h4 id="为什么要学习DP和Greedy"><a href="#为什么要学习DP和Greedy" class="headerlink" title="为什么要学习DP和Greedy?"></a>为什么要学习DP和Greedy?</h4><ul>
+<li> 在技术面试中如果能展示DP和Greedy求最优解一般都会给自己带来加分，这也是本人学习DP和Greedy的直接动力。</li>
+<li> 很多常用算法都采用了DP和Greedy思想，参见<a href="#algo_dp_greedy_algoindex">这里</a>，熟悉DP和Greedy思想更容易理解这类算法</li>
+</ul>
+<span id="more"></span>
+
+<h4 id="引子：一道leetcode题目"><a href="#引子：一道leetcode题目" class="headerlink" title="引子：一道leetcode题目"></a>引子：一道leetcode题目</h4><p>问题: 给出一个pair: (a,b), a &lt; b的数组，如(1,2) (3, 4) (0,6) (5,7) (8,9) (5,9)</p>
+<p>求pair构成的最长序列: p1, p2, p3… pi　<br>要求：　前后两个pair A，B: B.first &gt; A.Second<br>本例的最长序列为：(1,2) (3, 4) (5,7) (8,9)  </p>
+<p>原题在这里: <a target="_blank" rel="noopener" href="https://leetcode.com/problems/maximum-length-of-pair-chain/description/">Maximum Length of Pair Chain</a></p>
+<h4 id="DP初步及解法"><a href="#DP初步及解法" class="headerlink" title="DP初步及解法"></a>DP初步及解法</h4><h5 id="DP简介"><a href="#DP简介" class="headerlink" title="DP简介"></a>DP简介</h5><p>What is DP and Why DP ?　　<br>DP是对递归解法的实现的优化，以经典的Fibonacci numbers问题为例，递归解法: </p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">fib</span><span class="params">(<span class="keyword">int</span> n)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">   <span class="keyword">if</span> ( n &lt;= <span class="number">1</span> )</span><br><span class="line">      <span class="keyword">return</span> n;</span><br><span class="line">   <span class="keyword">return</span> fib(n<span class="number">-1</span>) + fib(n<span class="number">-2</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>递归解法包含很多次重复计算, 如fib(0)执行3次，fib(1) 5次</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">                         fib(5)</span><br><span class="line">                     &#x2F;             \</span><br><span class="line">               fib(4)                fib(3)</span><br><span class="line">             &#x2F;      \                &#x2F;     \</span><br><span class="line">         fib(3)      fib(2)         fib(2)    fib(1)</span><br><span class="line">        &#x2F;     \        &#x2F;    \       &#x2F;    \</span><br><span class="line">  fib(2)   fib(1)  fib(1) fib(0) fib(1) fib(0)</span><br><span class="line">  &#x2F;    \</span><br><span class="line">fib(1) fib(0)</span><br></pre></td></tr></table></figure>
+
+<p>求fib(n)问题，随着n增大重复计算也会急剧增长，为了解决重复计算问题，很自然的思路是把中间计算的fib(m)存入表中，用查表来代替重复计算，如何查表有两种具体的technique:</p>
+<ul>
+<li> 执行Top-down recursive，需要fib(m)值时，先查表: 表中有就不必计算，这就是DP算法的Memoization解法</li>
+</ul>
+<blockquote>
+<p>memoization is an optimization technique used primarily to speed up computer programs by storing the results of expensive function calls and returning the cached result when the same inputs occur again – Wikipedia</p>
+</blockquote>
+<ul>
+<li>　第二种: 最终目的求fib(n)，因为fib(n) = fib(n-1) + fib(n-2)，需要先求较小的值。可以直接从最小值开始计算fib(0)，fib(1)… 最终得出fib(n)，这就是DP算法的tablular解法</li>
+</ul>
+<p><strong>可见DP就是采用recursive思想，并利用Memoization或Tabular technique来优化求中间值过程，避免重复计算</strong></p>
+<p>经典算法教程归纳的DP两个特征和上面提到的等价: </p>
+<ul>
+<li> Optimal Substructure：　问题最优解可籍由其子问题的最优解来获得，暗示了递归算法，找到了递归关系就基本解决了问题</li>
+<li> Overlapping subproblems:　直接递归时子问题存在重叠，即存在重复计算问题，需要用Memoization或tabular technique来解决</li>
+</ul>
+<h5 id="DP解法"><a href="#DP解法" class="headerlink" title="DP解法"></a>DP解法</h5><p>目的是找到与子问题的递归关系，关键在于子问题的界定：</p>
+<p>排序的pair的更利于我们处理，可以按照first element排序，排序后的pair为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(0,6) (1,2) (3, 4) (5,7) (5,9) (8,9) </span><br></pre></td></tr></table></figure>
+
+<p>本题是求6个pair的最长连接序列，递归的想法便是: 已知k个pair的最长序列(0&lt; k &lt; 6)，如何求6个pair的最长序列？</p>
+<p>目标问题用f(6)表示，解法为: </p>
+<blockquote>
+<p>用第6个pair(8,9)分别尝试于前5个子问题的最优解进行配接，即检查(8,9)和f(1) … f(5)的最长序列是否能组成更长的序列，并取其中的最大值为f(6)的解，这就把f(6)成功的转化为对子问题的求解</p>
+</blockquote>
+<p>公式</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">f(n) &#x3D; max &#123;</span><br><span class="line">     v(i) &#x3D; &#123;</span><br><span class="line">        f(i) + 1 &#x2F;&#x2F; if pair(n)与f(i)的最长sequence可以组成更长的sequence</span><br><span class="line">        f(i)     &#x2F;&#x2F; otherwise</span><br><span class="line">    &#125;</span><br><span class="line">&#125; i &#x3D; [1,n-1]</span><br></pre></td></tr></table></figure>
+
+<p>代码因而也比较直观：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">findLongestChain</span><span class="params">(pairs [][]<span class="keyword">int</span>)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(pairs) == <span class="number">0</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">    &#125;</span><br><span class="line">    sortPairsArrByFirstElement(pairs)       <span class="comment">// 根据first element来排序pairs数组</span></span><br><span class="line">    dp := <span class="built_in">make</span>([]<span class="keyword">int</span>, <span class="built_in">len</span>(pairs))           <span class="comment">// 存放子问题的最优解</span></span><br><span class="line">    ele2OfDPRes := <span class="built_in">make</span>([]<span class="keyword">int</span>, <span class="built_in">len</span>(pairs))　　<span class="comment">// 存放子问题的最大序列的second element,以判断某pair是否可以与子问题组成更长的序列</span></span><br><span class="line">    dp[<span class="number">0</span>] = <span class="number">1</span>                               <span class="comment">// 初始化：　f(1)的最长sequence是自己，len为1</span></span><br><span class="line">    ele2OfDPRes[<span class="number">0</span>] = pairs[<span class="number">0</span>][<span class="number">1</span>]</span><br><span class="line">    max := <span class="number">1</span></span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">1</span>; i &lt; <span class="built_in">len</span>(pairs); i++ &#123;</span><br><span class="line">        dp[i] = <span class="number">1</span></span><br><span class="line">        ele2OfDPRes[i] = pairs[i][<span class="number">1</span>]</span><br><span class="line">        <span class="keyword">for</span> j := <span class="number">0</span>; j &lt; i; j++ &#123;</span><br><span class="line">            <span class="built_in">len</span> := <span class="number">0</span></span><br><span class="line">            <span class="keyword">if</span> pairs[i][<span class="number">0</span>] &gt; ele2OfDPRes[j] &#123; <span class="comment">// 新pair可以与f(i)组成更长的sequence</span></span><br><span class="line">                <span class="built_in">len</span> = dp[j] + <span class="number">1</span></span><br><span class="line">                <span class="keyword">if</span> <span class="built_in">len</span> &gt; dp[i] &#123;</span><br><span class="line">                    dp[i] = <span class="built_in">len</span></span><br><span class="line">                    ele2OfDPRes[i] = pairs[i][<span class="number">1</span>]</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;                          <span class="comment">// 新pair无法与f(i)组成更长的sequence，最长仍为f(i)的sequence</span></span><br><span class="line">                <span class="built_in">len</span> = dp[j]</span><br><span class="line">                <span class="keyword">if</span> <span class="built_in">len</span> &gt; dp[i] &#123;</span><br><span class="line">                    dp[i] = <span class="built_in">len</span></span><br><span class="line">                    ele2OfDPRes[i] = pairs[j][<span class="number">1</span>]</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> dp[i] &gt; max &#123;</span><br><span class="line">            max = dp[i]</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> max</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h4 id="Greedy初步及解法"><a href="#Greedy初步及解法" class="headerlink" title="Greedy初步及解法"></a>Greedy初步及解法</h4><h5 id="Greedy初步"><a href="#Greedy初步" class="headerlink" title="Greedy初步"></a>Greedy初步</h5><p>如果说DP本质是用递归求解问题，是Top-down的，Greedy的本质便是由小及大，每个子问题做出当前看起来<em>最好</em>的选择，到最后得到的便是问题最优解。</p>
+<blockquote>
+<p>Greedy is an algorithmic paradigm that builds up a solution piece by piece, always choosing the next piece that offers the most obvious and immediate benefit.</p>
+</blockquote>
+<p>但对于某些问题，每步的局部最优并不意味着得到的solution是全局最优的，因此Greedy算法最核心的办法是能证明一个问题能用局部最优法一步步求出的结果也是全局最优，举个例子：</p>
+<ul>
+<li>问题1: 小偷，来到一家商店，店里有金沙，铜沙，铜沙，但他的背包只能装50kg的物品，那么该如何选择使带走的东西价值最大呢？<br>  这个问题可以用Greedy算法解决：　首先装金沙，如果装完包内有空余，装银沙，否则装铜沙。即每步开始装当前单价最贵的物品，按此思路装满就是最优解。用反证法可以证明此解法正确。</li>
+<li>问题２：小偷，来到另一家商店，这次店里是金砖，银砖，铜砖，同样背包限重50kg, 那么这次他还能用贪婪算法成功的带走最大价值呢？<br>  答案是不行的，一个反例：　金砖0.1kg, 银砖50kg, 铜砖10kg, 50kg银砖价值&gt;0.1kg金砖，因此最优解是只装银砖，而非先装金砖</li>
+</ul>
+<p>上面列举的问题是经典的背包问题，分别是fractional knapsack和0-1 knapsack，前者可以用Greedy算法解决</p>
+<h5 id="Greedy解法"><a href="#Greedy解法" class="headerlink" title="Greedy解法"></a>Greedy解法</h5><p>本题的关键便是找到Greedy算法，并证明用Greedy算法求出的solution是最优的</p>
+<p>还是先对pairs排序，这次以second element为key进行升序排列：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(1,2) (3, 4) (0,6) (5,7) (8,9) (5,9)</span><br></pre></td></tr></table></figure>
+
+<p>Greedy算法便是: </p>
+<ul>
+<li> 第一个元素肯定入选最长sequence</li>
+<li> 依次按顺序遍历pair，每次选second element最小的，假设与之前得到的sequence匹配(此pair的first element &gt; sequence最后pair的second element)，则此pair在sequence上，否则找下一个</li>
+</ul>
+<p>证明: 反证法</p>
+<ul>
+<li> 第一条：假设第一个元素A不属于最长sequence，假设是pair B，但是有B.second &gt; A.second，因此A也满足最长sequence</li>
+<li> 第二条：已经得到部分最长sequence，当前满足sequence的最小pair为A，假设最终sequence选B没选A，同上反证也可以证明A满足sequence，而且A的second element更小，比B更优。</li>
+</ul>
+<p>证明了Greedy可行，实现很直观:</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">findLongestChain</span><span class="params">(pairs [][]<span class="keyword">int</span>)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(pairs) &lt;= <span class="number">1</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">len</span>(pairs)</span><br><span class="line">    &#125;</span><br><span class="line">    sortPairsArrBySecElement(pairs)</span><br><span class="line">    rightMost := pairs[<span class="number">0</span>][<span class="number">1</span>]</span><br><span class="line">    lenPairs := <span class="number">1</span></span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">1</span>; i &lt; <span class="built_in">len</span>(pairs); i++ &#123;</span><br><span class="line">        <span class="keyword">if</span> pairs[i][<span class="number">0</span>] &gt; rightMost &#123;</span><br><span class="line">            lenPairs++</span><br><span class="line">            rightMost = pairs[i][<span class="number">1</span>]</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> lenPairs</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可见，若Greedy算法可行，则Greedy一般而言是最优解法，时间，空间，代码实现复杂度都不大</p>
+<h4 id="为什么Greedy和DP对pair数组排序方式不一样"><a href="#为什么Greedy和DP对pair数组排序方式不一样" class="headerlink" title="为什么Greedy和DP对pair数组排序方式不一样"></a>为什么Greedy和DP对pair数组排序方式不一样</h4><p>其实是DP按first，second排序都可以，因为DP对元素是如何被排序的没有依赖，只要能够知道当前pair是否和某个特定子问题的sequence构成更长的sequence即可。<br>而Greedy只能按照second排序，因为如下按pair.first排序的例子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(1, 10000) (2, 3) (5, 6)</span><br></pre></td></tr></table></figure>
+<p>很明显不能选(1, 10000)作为最长sequence节点</p>
+<h4 id="DP和Greedy应用举例"><a href="#DP和Greedy应用举例" class="headerlink" title="DP和Greedy应用举例"></a><h4 id=algo_dp_greedy_algoindex>DP和Greedy应用举例</h></h4><ul>
+<li>DP<ul>
+<li>string algorithms<ul>
+<li>  longest common subsequence</li>
+<li>  longest increasing subsequence</li>
+<li>  longest common substring</li>
+<li>  Levenshtein distance </li>
+</ul>
+</li>
+<li> 0-1 knapsack</li>
+<li> Bellman–Ford algorithm</li>
+<li> Floyd’s all-pairs shortest path algorithm</li>
+<li> travelling salesman problem</li>
+</ul>
+</li>
+<li>Greedy<ul>
+<li> Kruskal’s Minimum Spanning Tree (MST)</li>
+<li> Prim’s Minimum Spanning Tree</li>
+<li> Dijkstra’s Shortest Path</li>
+<li> Huffman Coding</li>
+<li> Activity Selection problem(本题变种，基本一样)</li>
+<li> fractional knapsack</li>
+</ul>
+</li>
+</ul>
+<p><a href="#https://en.wikipedia.org/wiki/Dynamic_programming#Algorithms_that_use_dynamic_programming#Algorithms_that_use_dynamic_programming">较全的DP应用场景见这里</a></p>
+<h4 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h4><p>本文是笔者学习DP和Greedy算法的一个引子，今后会安排时间依着Sedgewick的<em>Algorithms</em>一书以及geekforgeek的题集系列继续深入学习<br>在接近完成本文时，看到了知乎上的问题，提到DP的本质是<strong>状态转移方程</strong>，颇有道理，之后随着对DP的理解加深会持续更正本文，或新开文章讨论。</p>
+<p>学习是一个循序渐进的过程。一点心得分享给大家：</p>
+<blockquote>
+<p>克服了对<em>“难题”</em>的畏惧，也就解决了难题的大半</p>
+</blockquote>
+<h4 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h4><p><a target="_blank" rel="noopener" href="https://www.zhihu.com/question/23995189">什么是动态规划？动态规划的意义是什么？</a><br><a target="_blank" rel="noopener" href="http://www.geeksforgeeks.org/dynamic-programming-set-20-maximum-length-chain-of-pairs/">Dynamic Programming | Set 20 (Maximum Length Chain of Pairs)</a><br><a target="_blank" rel="noopener" href="http://www.geeksforgeeks.org/?p=18528">Greedy Algorithms | Set 1 (Activity Selection Problem)</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/algorithms/" rel="tag"># algorithms</a>
+              <a href="/tags/leetcode/" rel="tag"># leetcode</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+            </div>
+            <div class="post-nav-item">
+                <a href="/2017/09/04/golang-sort-top-down-approach/" rel="next" title="Head First Golang Sort">
+                  Head First Golang Sort <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

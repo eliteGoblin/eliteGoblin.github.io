@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Preface最近工作转向k8s，自己比较满意，之前很久就有兴趣，也看完了一本kubernetes up and running, 但并没有进一步深入研究。这次参与公司的k8s cluster升级项目，收获良多，算是正式入门了，看来深入的掌握知识果然还是得learning by doing，压力动力具备，目标导向，才能高效的学习。后续也会推出k8s, istio系列blog。 回归正题，在">
+<meta property="og:type" content="article">
+<meta property="og:title" content="which namespace does RBAC take effect in k8s">
+<meta property="og:url" content="https://elitegoblin.github.io/2019/09/14/which-namespace-does-RBAC-take-effect-in-k8s/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Preface最近工作转向k8s，自己比较满意，之前很久就有兴趣，也看完了一本kubernetes up and running, 但并没有进一步深入研究。这次参与公司的k8s cluster升级项目，收获良多，算是正式入门了，看来深入的掌握知识果然还是得learning by doing，压力动力具备，目标导向，才能高效的学习。后续也会推出k8s, istio系列blog。 回归正题，在">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-09-14T05:42:34.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.277Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="kubernetes">
+<meta property="article:tag" content="RBAC">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2019/09/14/which-namespace-does-RBAC-take-effect-in-k8s/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2019&#x2F;09&#x2F;14&#x2F;which-namespace-does-RBAC-take-effect-in-k8s&#x2F;&quot;,&quot;path&quot;:&quot;2019&#x2F;09&#x2F;14&#x2F;which-namespace-does-RBAC-take-effect-in-k8s&#x2F;&quot;,&quot;title&quot;:&quot;which namespace does RBAC take effect in k8s&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>which namespace does RBAC take effect in k8s | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E8%83%8C%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">问题背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%9E%90-amp-amp-%E9%AA%8C%E8%AF%81"><span class="nav-number">3.</span> <span class="nav-text">分析&amp;&amp;验证</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C%E7%8E%AF%E5%A2%83-amp-amp-%E5%B7%A5%E5%85%B7%E4%BB%8B%E7%BB%8D"><span class="nav-number">3.1.</span> <span class="nav-text">实验环境&amp;&amp;工具介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#service-account%E5%B9%B6%E4%B8%8D%E5%86%B3%E5%AE%9A%E4%BD%9C%E7%94%A8namespace"><span class="nav-number">3.2.</span> <span class="nav-text">service account并不决定作用namespace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#role%E4%B8%8D%E6%94%AF%E6%8C%81clusterrolebinding"><span class="nav-number">3.3.</span> <span class="nav-text">role不支持clusterrolebinding</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#role%E4%B8%8Erolebinding%E5%BF%85%E9%A1%BB%E5%A4%84%E4%BA%8E%E5%90%8C%E4%B8%80namespace"><span class="nav-number">3.4.</span> <span class="nav-text">role与rolebinding必须处于同一namespace</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#clusterrole-rolebinding-%E7%94%A8rolebinding%E7%9A%84namespace"><span class="nav-number">3.5.</span> <span class="nav-text">clusterrole + rolebinding, 用rolebinding的namespace</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA"><span class="nav-number">4.</span> <span class="nav-text">结论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-number">5.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2019/09/14/which-namespace-does-RBAC-take-effect-in-k8s/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          which namespace does RBAC take effect in k8s
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-09-14 13:42:34" itemprop="dateCreated datePublished" datetime="2019-09-14T13:42:34+08:00">2019-09-14</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <div align="center">
+
+</div>
+
+<h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>最近工作转向k8s，自己比较满意，之前很久就有兴趣，也看完了一本kubernetes up and running, 但并没有进一步深入研究。这次参与公司的k8s cluster升级项目，收获良多，算是正式入门了，看来深入的掌握知识果然还是得learning by doing，压力动力具备，目标导向，才能高效的学习。后续也会推出k8s, istio系列blog。</p>
+<p>回归正题，在升级到k8s v1.13时，需要开启RBAC模块提升安全性，对每个service account(以下简称sa)赋予least priviledge。这需要建立特定的role/cluster role，并将其bind到service account。这就涉及到授权作用于哪个namespace的问题(namespace是k8s的一个机制：可以将k8s集群进一步分成子集群，起到隔离的效果)。</p>
+<span id="more"></span>
+
+<h2 id="问题背景"><a href="#问题背景" class="headerlink" title="问题背景"></a>问题背景</h2><p>K8s通过RESTFul API来实现declarative definition. 也就是k8s其概念都会对应为内部的Object, 我们需要的操作就会转化为对Object的CRUD操作。</p>
+<p>RBAC作用的原理是request到达k8s api server后，authenticate为user/group或者sa, 以sa为例，检查其bind到哪个role/clusterrole上(bind是通过rolebinding/clusterrolebinding完成的，体现了k8s的松耦合设计)。</p>
+<p>service account object需要指定namespace, rolebinding也有，同样role也有namespace，三者的namespace如何共同决定authorization起作用的namespace呢？ 感觉比较乱，其实不然，我们来实际验证一把。</p>
+<h2 id="分析-amp-amp-验证"><a href="#分析-amp-amp-验证" class="headerlink" title="分析&amp;&amp;验证"></a>分析&amp;&amp;验证</h2><h3 id="实验环境-amp-amp-工具介绍"><a href="#实验环境-amp-amp-工具介绍" class="headerlink" title="实验环境&amp;&amp;工具介绍"></a>实验环境&amp;&amp;工具介绍</h3><p>我们创建三个不同的namespace， 创建ns.yaml: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Namespace</span><br><span class="line">metadata:</span><br><span class="line">  name: ns-sa</span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Namespace</span><br><span class="line">metadata:</span><br><span class="line">  name: ns-role</span><br><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: Namespace</span><br><span class="line">metadata:</span><br><span class="line">  name: ns-rolebinding</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>并创建</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f .&#x2F;ns.yaml</span><br></pre></td></tr></table></figure>
+
+<p>k8s很方便的内置了auth subcommand来验证某个sa是否有特定权限, 假设我们查看name为test的sa是否在kube-system有list pods的权限: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl auth can-i list pods --namespace kube-system --as system:serviceaccount:kube-system:test</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li> sa必须以system:serviceaccount:{namespace}:{sa name}的形式提供</li>
+<li> –as表示当前user act as指定的sa，需要当前用户有impersonate权限，类似AWS的assume role。</li>
+</ul>
+<p>接下来我们分别验证sa, role/clusterrole, rolebinding/clusterrolebinding在不同namespace组合下实际授权效果。</p>
+<h3 id="service-account并不决定作用namespace"><a href="#service-account并不决定作用namespace" class="headerlink" title="service account并不决定作用namespace"></a>service account并不决定作用namespace</h3><p>标题是我们的结论，我们实际验证: </p>
+<p>建立test-sa.yaml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: ServiceAccount</span><br><span class="line">metadata:</span><br><span class="line">  name: test-sa</span><br><span class="line">  namespace: ns-sa</span><br><span class="line">---</span><br><span class="line">apiVersion: rbac.authorization.k8s.io&#x2F;v1</span><br><span class="line">kind: Role</span><br><span class="line">metadata:</span><br><span class="line">  namespace: ns-role</span><br><span class="line">  name: test-role</span><br><span class="line">rules:</span><br><span class="line">- apiGroups: [&quot;&quot;] # &quot;&quot; indicates the core API group</span><br><span class="line">  resources: [&quot;pods&quot;]</span><br><span class="line">  verbs: [&quot;list&quot;]</span><br><span class="line">---</span><br><span class="line">apiVersion: rbac.authorization.k8s.io&#x2F;v1</span><br><span class="line">kind: RoleBinding</span><br><span class="line">metadata:</span><br><span class="line">  name: test-rolebinding</span><br><span class="line">  namespace: ns-role</span><br><span class="line">subjects:</span><br><span class="line">- kind: ServiceAccount</span><br><span class="line">  name: test-sa</span><br><span class="line">  namespace: ns-sa</span><br><span class="line">roleRef:</span><br><span class="line">  kind: Role #this must be Role or ClusterRole</span><br><span class="line">  name: test-role # this must match the name of the Role or ClusterRole you wish to bind to</span><br><span class="line">  apiGroup: rbac.authorization.k8s.io</span><br></pre></td></tr></table></figure>
+
+<p>并应用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f test-sa.yaml</span><br></pre></td></tr></table></figure>
+<p>在namespace ns-sa下，test-sa并没有权限，但是在ns-role下就有:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">kubectl auth can-i list pods --namespace ns-role --as system:serviceaccount:ns-sa:test-sa</span><br><span class="line"># yes</span><br><span class="line">kubectl auth can-i list pods --namespace ns-sa --as system:serviceaccount:ns-sa:test-sa</span><br><span class="line"># no</span><br></pre></td></tr></table></figure>
+
+<p>可见sa的namespace只决定sa object建立在哪个namespace,并不能决定授权起作用的namespace。<br>cleanup:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl delete -f test-sa.yaml</span><br></pre></td></tr></table></figure>
+
+<p>在证明了sa不影响后，clusterrole+clusterrolebinding的作用范围也很直观: 两者都是cluster wide，也必然在cluster wide范围生效。比较tricky的是role+clusterrolebinding和clusterrole+rolebinding。</p>
+<h3 id="role不支持clusterrolebinding"><a href="#role不支持clusterrolebinding" class="headerlink" title="role不支持clusterrolebinding"></a>role不支持clusterrolebinding</h3><p>下面的role_clusterrolebinding.yaml的validation失效: </p>
+<p>role_clusterbinding.yaml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: ServiceAccount</span><br><span class="line">metadata:</span><br><span class="line">  name: test-sa</span><br><span class="line">  namespace: ns-sa</span><br><span class="line">---</span><br><span class="line">apiVersion: rbac.authorization.k8s.io&#x2F;v1</span><br><span class="line">kind: Role</span><br><span class="line">metadata:</span><br><span class="line">  namespace: ns-role</span><br><span class="line">  name: test-role</span><br><span class="line">rules:</span><br><span class="line">- apiGroups: [&quot;&quot;] # &quot;&quot; indicates the core API group</span><br><span class="line">  resources: [&quot;pods&quot;]</span><br><span class="line">  verbs: [&quot;list&quot;]</span><br><span class="line">---</span><br><span class="line">apiVersion: rbac.authorization.k8s.io&#x2F;v1</span><br><span class="line">kind: ClusterRoleBinding</span><br><span class="line">metadata:</span><br><span class="line">  name: test-cluserrolebinding</span><br><span class="line">subjects:</span><br><span class="line">- kind: ServiceAccount</span><br><span class="line">  name: test-sa</span><br><span class="line">  namespace: ns-sa</span><br><span class="line">roleRef:</span><br><span class="line">  kind: Role #this must be Role or ClusterRole</span><br><span class="line">  name: test-role # this must match the name of the Role or ClusterRole you wish to bind to</span><br><span class="line">  apiGroup: rbac.authorization.k8s.io</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f role_clusterbinding.yaml</span><br></pre></td></tr></table></figure>
+
+<p>error msg: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">serviceaccount&#x2F;test-sa created</span><br><span class="line">role.rbac.authorization.k8s.io&#x2F;test-role created</span><br><span class="line">The ClusterRoleBinding &quot;test-cluserrolebinding&quot; is invalid: roleRef.kind: Unsupported value: &quot;Role&quot;: supported values: &quot;ClusterRole&quot;</span><br></pre></td></tr></table></figure>
+
+<p>可见role并不能被clusterrolebinding绑定到sa。</p>
+<p>cleanup:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl delete -f role_clusterbinding.yaml</span><br></pre></td></tr></table></figure>
+
+<h3 id="role与rolebinding必须处于同一namespace"><a href="#role与rolebinding必须处于同一namespace" class="headerlink" title="role与rolebinding必须处于同一namespace"></a>role与rolebinding必须处于同一namespace</h3><p>在之前模板中，我们发现rolebinding object并不能指定role的namespace(在roleRef字段), 如果两者分属于不同的namespace，运行时会提示找不到对应的role:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">metadata:</span><br><span class="line">  name: test-rolebinding</span><br><span class="line">  namespace: ns-role</span><br><span class="line">subjects:</span><br><span class="line">- kind: ServiceAccount</span><br><span class="line">  name: test-sa</span><br><span class="line">  namespace: ns-sa</span><br><span class="line">roleRef:</span><br><span class="line">  kind: Role #this must be Role or ClusterRole</span><br><span class="line">  name: test-role # this must match the name of the Role or ClusterRole you wish to bind to</span><br><span class="line">  apiGroup: rbac.authorization.k8s.io</span><br></pre></td></tr></table></figure>
+
+<p>这其实表明rolebinding必须和role在同一namespace下。</p>
+<h3 id="clusterrole-rolebinding-用rolebinding的namespace"><a href="#clusterrole-rolebinding-用rolebinding的namespace" class="headerlink" title="clusterrole + rolebinding, 用rolebinding的namespace"></a>clusterrole + rolebinding, 用rolebinding的namespace</h3><p>比较好理解，也是常用的pattern: clusterrole定义了模板，被不同namespace绑定，将priviledge限制到某个namespace。</p>
+<p>clusterrole_rolebinding.yaml</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">apiVersion: v1</span><br><span class="line">kind: ServiceAccount</span><br><span class="line">metadata:</span><br><span class="line">  name: test-sa</span><br><span class="line">  namespace: ns-sa</span><br><span class="line">---</span><br><span class="line">apiVersion: rbac.authorization.k8s.io&#x2F;v1</span><br><span class="line">kind: ClusterRole</span><br><span class="line">metadata:</span><br><span class="line">  name: test-clusterrole</span><br><span class="line">rules:</span><br><span class="line">- apiGroups: [&quot;&quot;] # &quot;&quot; indicates the core API group</span><br><span class="line">  resources: [&quot;pods&quot;]</span><br><span class="line">  verbs: [&quot;list&quot;]</span><br><span class="line">---</span><br><span class="line">apiVersion: rbac.authorization.k8s.io&#x2F;v1</span><br><span class="line">kind: RoleBinding</span><br><span class="line">metadata:</span><br><span class="line">  name: test-cluserrolebinding</span><br><span class="line">subjects:</span><br><span class="line">- kind: ServiceAccount</span><br><span class="line">  name: test-sa</span><br><span class="line">  namespace: ns-sa</span><br><span class="line">roleRef:</span><br><span class="line">  kind: ClusterRole #this must be Role or ClusterRole</span><br><span class="line">  name: test-clusterrole # this must match the name of the Role or ClusterRole you wish to bind to</span><br><span class="line">  apiGroup: rbac.authorization.k8s.io</span><br></pre></td></tr></table></figure>
+
+<p>创建RBAC: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f clusterrole_rolebinding.yaml</span><br></pre></td></tr></table></figure>
+
+<p>测试</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">kubectl auth can-i list pods --namespace kube-system --as system:serviceaccount:ns-sa:test-sa</span><br><span class="line"># no</span><br><span class="line">kubectl auth can-i list pods --namespace ns-role --as system:serviceaccount:ns-sa:test-sa</span><br><span class="line"># yes</span><br></pre></td></tr></table></figure>
+
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>经过分情况分析，我们发现: </p>
+<ul>
+<li> sa的namespace不影响授权作用namespace</li>
+<li> role+rolebinding，两者必须处于同一namespace，仅作用于指定namespace下</li>
+<li> clusterrole+clusterrolebinding，作用于cluster wide</li>
+<li> clusterrole+rolebinding作用于rolebinding的namespace</li>
+</ul>
+<p>再次分析可以得出： 只要看rolebinding/clusterrolebinding的namespace即可，同时值得注意的是不指定namespace kubectl会默认为当前namespace(如rolebinding的metadata:namespace)，容易造成unexpected behaviour。</p>
+<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><p><a target="_blank" rel="noopener" href="https://rancher.com/understanding-kubernetes-rbac/">Understanding Kubernetes RBAC</a><br><a target="_blank" rel="noopener" href="https://jimmysong.io/posts/kubectl-user-authentication-authorization/">kubectl的用户认证授权使用kubeconfig或者token进行权限认证</a><br><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/52995962/kubernetes-namespace-default-service-account">Kubernetes namespace default service account</a><br><a target="_blank" rel="noopener" href="http://docs.heptio.com/content/tutorials/rbac.html">How to: RBAC best practices and workarounds<br>Introduction</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/kubernetes/" rel="tag"># kubernetes</a>
+              <a href="/tags/RBAC/" rel="tag"># RBAC</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/07/27/leetcode-3Sum/" rel="prev" title="leetcode: 3Sum">
+                  <i class="fa fa-chevron-left"></i> leetcode: 3Sum
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/10/05/Understand-K8s-authentication-and-authorisation/" rel="next" title="Understand K8s authentication and authorisation">
+                  Understand K8s authentication and authorisation <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

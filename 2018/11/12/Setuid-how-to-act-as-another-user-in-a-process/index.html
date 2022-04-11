@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Preface在linux下，有时我们的进程需要临时提升权限，比如临时在file system中当前用户不具备access之处创建文件，修改记录，应该如何做到呢？linux提供了setuid&#x2F;setgid机制，我们经常会用到的sudo就是其中的一个例子，接下来让我们看看相关的linux知识，并分析几个实际的例子加深理解。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Setuid in Linux File Permission">
+<meta property="og:url" content="https://elitegoblin.github.io/2018/11/12/Setuid-how-to-act-as-another-user-in-a-process/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Preface在linux下，有时我们的进程需要临时提升权限，比如临时在file system中当前用户不具备access之处创建文件，修改记录，应该如何做到呢？linux提供了setuid&#x2F;setgid机制，我们经常会用到的sudo就是其中的一个例子，接下来让我们看看相关的linux知识，并分析几个实际的例子加深理解。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-11-12T00:39:55.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="setuid">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2018/11/12/Setuid-how-to-act-as-another-user-in-a-process/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2018&#x2F;11&#x2F;12&#x2F;Setuid-how-to-act-as-another-user-in-a-process&#x2F;&quot;,&quot;path&quot;:&quot;2018&#x2F;11&#x2F;12&#x2F;Setuid-how-to-act-as-another-user-in-a-process&#x2F;&quot;,&quot;title&quot;:&quot;Setuid in Linux File Permission&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Setuid in Linux File Permission | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Big-Picture"><span class="nav-number">1.1.</span> <span class="nav-text">Big Picture</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#File-Access-Permission-Bit"><span class="nav-number">1.2.</span> <span class="nav-text">File Access Permission Bit</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#User-Group"><span class="nav-number">1.3.</span> <span class="nav-text">User&#x2F;Group</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UserId-GroupId-in-processes"><span class="nav-number">1.4.</span> <span class="nav-text">UserId&#x2F;GroupId in processes</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#How-to-use-setuid-bit"><span class="nav-number">2.</span> <span class="nav-text">How to use setuid bit</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Usage-Cases"><span class="nav-number">3.</span> <span class="nav-text">Usage Cases</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#passwd"><span class="nav-number">3.1.</span> <span class="nav-text">passwd</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sudo"><span class="nav-number">3.2.</span> <span class="nav-text">sudo</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Why-saved-effective-id-is-useful"><span class="nav-number">4.</span> <span class="nav-text">Why saved-effective-id is useful</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Regarding-Group"><span class="nav-number">5.</span> <span class="nav-text">Regarding Group</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Setuid-pitfalls"><span class="nav-number">6.</span> <span class="nav-text">Setuid pitfalls</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Conclusion"><span class="nav-number">7.</span> <span class="nav-text">Conclusion</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-number">8.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2018/11/12/Setuid-how-to-act-as-another-user-in-a-process/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Setuid in Linux File Permission
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-11-12 08:39:55" itemprop="dateCreated datePublished" datetime="2018-11-12T08:39:55+08:00">2018-11-12</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        
+
+<h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>在linux下，有时我们的进程需要临时提升权限，比如临时在file system中当前用户不具备access之处创建文件，修改记录，应该如何做到呢？linux提供了setuid/setgid机制，我们经常会用到的sudo就是其中的一个例子，接下来让我们看看相关的linux知识，并分析几个实际的例子加深理解。</p>
+<span id="more"></span>
+
+<h3 id="Big-Picture"><a href="#Big-Picture" class="headerlink" title="Big Picture"></a>Big Picture</h3><p>Linux的权限系统简洁且优雅，不同module像齿轮一样紧密配合，主要组成部分:  </p>
+<ul>
+<li> File Access Permission Bit</li>
+<li> User/Group</li>
+<li> User/Group的运行时切换</li>
+</ul>
+<p>File Access Permission Bit 和 User/Group机制组成了我们最熟悉的权限系统，File Access Permission Bit规定了不同user对此文件的access，User/Group提供了不同User/Group的标识，两者一起决定着用户可否对特定文件执行某个操作。</p>
+<h3 id="File-Access-Permission-Bit"><a href="#File-Access-Permission-Bit" class="headerlink" title="File Access Permission Bit"></a>File Access Permission Bit</h3><p>我们对linux的file access permission bit一定不陌生，我们来review一下: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ls -l</span><br><span class="line">-rw-rw-r--   1 frankie normal_users   2355 10月  4 08:28 _config.yml</span><br><span class="line">drwxrwxr-x 329 frankie normal_users  12K 10月  3 16:55 node_modules</span><br></pre></td></tr></table></figure>
+
+
+<div align="center">
+
+</div>
+
+<p>file 同时还存有userId, groupId, 这里例子分别是frankie及normal_users组。基于特定的userId/groupId，permission bit才能根据permission bit，得出该用户/用户组有无对file的特定权限。</p>
+<h3 id="User-Group"><a href="#User-Group" class="headerlink" title="User/Group"></a>User/Group</h3><p>File Permission Bit解决了: 给定用户对本文件有什么权限的问题，User/Group机制正是提供了当前用户是谁的问题。</p>
+<p>Linux系统的每个用户都对应有userId(也称为uid)，每个userId都属于某个group(group有唯一groupId，也称为gid)。每个user是否只能属于1个group呢，不是的，可以同时属于多个group，称为supplemenray group</p>
+<blockquote>
+<p>A user on Linux belongs to a primary group, which is specified in the /etc/passwd file, and can be assigned to multiple supplementary groups, which are specific in the /etc/group file</p>
+</blockquote>
+<blockquote>
+<p>Primary group – Specifies a group that the operating system assigns to files that are created by the user. Each user must belong to a primary group.<br>Secondary groups – Specifies one or more groups to which a user also belongs. Users can belong to up to 15 secondary groups.</p>
+</blockquote>
+<p>利用id命令查看当前用户uid, gid等信息</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uid&#x3D;1000(frankie) gid&#x3D;1000(frankie) 组&#x3D;1000(frankie),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),113(lpadmin),128(sambashare),999(docker)</span><br></pre></td></tr></table></figure>
+
+<p>可见frankie用户，除了primary group为normal_users外，还属于sudo, docker等group。supplemenray group与primary的区别除了create file默认为primary group外，用作permission bit时效果是一样的：</p>
+<p>假设用户frankie的由supplementary group之一是docker，文件access bit如下:  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">srw-rw---- 1 root docker 0 11月 12 08:05 &#x2F;run&#x2F;docker.sock</span><br></pre></td></tr></table></figure>
+
+<p>则frankie对 /run/docker.sock文件有 rw- 权限，因为frankie属于docker用户组(由supplementary group指定)</p>
+<h3 id="UserId-GroupId-in-processes"><a href="#UserId-GroupId-in-processes" class="headerlink" title="UserId/GroupId in processes"></a>UserId/GroupId in processes</h3><p>前面说到User/Group结合File Permission Bit决定最终File Access Permission，也就是是否具有某权限。我们谈到用户是否有权限时，其实指的是用户的 <strong>进程</strong> 是否对某文件有rwx的权限，例如我们在编辑某文件，提示permission denied，其实是用户启动的VIM，对文件不具备写权限。  </p>
+<p>那进程也需要有UserId/GroupId，系统才能由此结合File Permission Bit来最终判定进程的permission。那么用户启动的进程，UserId/GroupId是否就是与当前用户的完全一样呢？我们需要了解一下Linux中process内部UserId/GroupId实现机制。 对于GroupId，其实现完全与UserId相同，下面仅讨论UserId。 </p>
+<p>Process 关联有两组UserId:  </p>
+<ul>
+<li> RealUserId</li>
+<li> EffectiveUserId</li>
+</ul>
+<blockquote>
+<p>The real user ID and real group ID identify who we really are. These two fields are taken from our entry in the password file when we log in<br>The effective user ID, effective group ID, and supplementary group IDs<br>determine our file access permissions</p>
+</blockquote>
+<p>一般这两个UserId是一样的，例如我们执行VIM程序时，RealUserId是我们自己，与当前用户登录名相同。EffectiveUserId也同样是当前用户，根据file permission bit，结合当前用户是否是file的owner，及所属Group决定对文件的access permission。那为什么除了RealUserId外还需要一个EffectiveUserId呢？  </p>
+<p>因为有时我们需要process以file owner的身份执行，而非当前用户，这样就实现了”相当于以另一个用户的身份执行此程序”，这就是setuid bit机制。</p>
+<blockquote>
+<p>When the setuid bit is used, the behavior described above it’s modified so that when an executable is launched, it does not run with the privileges of the user who launched it, but with that of the file owner instead. For example, if an executable has the setuid bit set on it, and it’s owned by root, when launched by a normal user, it will run with root privileges. </p>
+</blockquote>
+<ul>
+<li> setuid bit仅作用于file，对folder无效</li>
+<li> setuid需要file owner的execute bit开启，否则无效</li>
+</ul>
+<p>回到之前的问题，正是由于process有时需要以另外用户的身份运行，而不总是与当前登录的用户相同，因此需要额外的EffectiveUserId来区分：RealUserId标识真正登录的用户，EffectiveUserId正如其名，标识当前作用于File Permission Bit的UserId，就是说检查Linux检查某进程的Access Permission，看的是EffectiveUserId，而不是RealUserId，后者仅起到记录此process是被哪个用户启动的作用。</p>
+<h2 id="How-to-use-setuid-bit"><a href="#How-to-use-setuid-bit" class="headerlink" title="How to use setuid bit"></a>How to use setuid bit</h2><p>setuid bit是一个特殊的file permission bit, 我们通过一个简单golang程序程序，演示setuid的作用，<a target="_blank" rel="noopener" href="https://play.golang.org/p/SCPkBcNeu2_T">play ground</a></p>
+<p>test_setuid.go</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line">package main</span><br><span class="line"></span><br><span class="line">import (</span><br><span class="line">    &quot;fmt&quot;</span><br><span class="line">    &quot;os&#x2F;user&quot;</span><br><span class="line">    &quot;syscall&quot;</span><br><span class="line"></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; getRealUserID is to get the real user id of current process</span><br><span class="line">func GetRealUserID() int &#123;</span><br><span class="line">    return syscall.Getuid()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; GetEffectiveUserID is to get the effective user id of current process</span><br><span class="line">func GetEffectiveUserID() int &#123;</span><br><span class="line">    return syscall.Geteuid()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func GetUserNameFromId(userId int) (name string, err error) &#123;</span><br><span class="line">    u, err :&#x3D; user.LookupId(fmt.Sprintf(&quot;%d&quot;, userId))</span><br><span class="line">    if err !&#x3D; nil &#123;</span><br><span class="line">        return &quot;&quot;, err</span><br><span class="line">    &#125;</span><br><span class="line">    return u.Username, nil</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">func main() &#123;</span><br><span class="line">  fmt.Println(&quot;This is demo program showing realuser and effective user&quot;)</span><br><span class="line">  realUserId  :&#x3D; GetRealUserID()</span><br><span class="line">  realUserName, _ :&#x3D; GetUserNameFromId(realUserId)</span><br><span class="line">  effectiveUserId  :&#x3D; GetEffectiveUserID()</span><br><span class="line">  effectiveUserName, _ :&#x3D; GetUserNameFromId(effectiveUserId)</span><br><span class="line">  fmt.Printf(&quot;RealUserId: %d RealUserName %s\n&quot;, realUserId, realUserName)</span><br><span class="line">  fmt.Printf(&quot;EffectiveUserId: %d EffectiveUserName %s\n&quot;, effectiveUserId, effectiveUserName)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>此demo通过直接调用syscall，打印出程序的RealUser和EffectiveUser。</p>
+<p>编译称为二进制: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go build -o test_setuid test_setuid.go</span><br></pre></td></tr></table></figure>
+
+<p>我们先查看一下我本机当前用户，uid和gid为1000, name均为frankie</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">id</span><br><span class="line">uid&#x3D;1000(frankie) gid&#x3D;1000(frankie) 组&#x3D;1000(frankie), ...</span><br></pre></td></tr></table></figure>
+
+<p>我们运行一下，得到</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">RealUserId: 1000 RealUserName frankie</span><br><span class="line">EffectiveUserId: 1000 EffectiveUserName frankie</span><br></pre></td></tr></table></figure>
+
+<p>符合预期：这也是最常见的情况，RealUserId和EffectiveUserId相同，都是当前用户。</p>
+<p>我们开启setuid bit</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chmod u+s test_setuid</span><br></pre></td></tr></table></figure>
+
+<p>在zsh下，以红色高亮标识开启此bit的binary </p>
+<div align="center">
+
+</div>
+
+<p>之前还是绿颜色的，而且注意execution bit由x变成s  </p>
+<p>怎么测试以另一个用户运行test_setuid呢？正好系统里有root用户，我们先切换到root: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo su -</span><br></pre></td></tr></table></figure>
+
+<p>得到root的prompt，再次运行test_setuid，得到</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">RealUserId: 0 RealUserName root</span><br><span class="line">EffectiveUserId: 1000 EffectiveUserName frankie</span><br></pre></td></tr></table></figure>
+
+<p>看到变化了吗？RealUserId指示真正的用户变成了root，但是起作用的UserId(effectiveUserId)，是test_setuid，也就是file的owner，这也意味着，file access权限从root降低到普通用户frankie了，不能为所欲为了。这样实现了以另一个user的身份运行process，从结果来说，permission可能升高，也可能降低，以目标effectiveUser为准。  </p>
+<p>看到这里，我们对如何使用setuid机制已经明了，就是简单的开启file的一个特殊bit即可，但说到底，这样，实现在不同user的权限之间切换，有何实际意义呢？我们来看几个实际的例子</p>
+<h2 id="Usage-Cases"><a href="#Usage-Cases" class="headerlink" title="Usage Cases"></a>Usage Cases</h2><h3 id="passwd"><a href="#passwd" class="headerlink" title="passwd"></a>passwd</h3><p>passwd用来更改当前用户的密码，直接运行，在其提示下先输入当前用户的密码，就可以修改新密码了。存储密码的文件位于 /etc/shadow，Linux将用户的密码存储于此处，passwd程序通过修改此文件的内容来达到修改密码的目的，查看此文件的permission bit：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-rw-r----- 1 root shadow 1.5K 11月 13 08:11 &#x2F;etc&#x2F;shadow</span><br></pre></td></tr></table></figure>
+
+<p>发现只有root用户才可以对其进行write操作，而我们运行passwd时，是以当前用户运行的，并没有sudo或者需要输入root密码之类的操作，实现了普通用户的进行修改只有root才能写的操作，怎么做到的呢？答案就是setuid，我们看下passwd程序： </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">ll &#x2F;usr&#x2F;bin&#x2F;passwd</span><br><span class="line"># 得到</span><br><span class="line">-rwsr-xr-x 1 root root 59K 1月  26  2018 &#x2F;usr&#x2F;bin&#x2F;passwd</span><br></pre></td></tr></table></figure>
+
+<p>owner的s表明是开启了setuid bit，而其owner正是root，这样才会在运行时以root运行，修改/etc/shadow文件。</p>
+<h3 id="sudo"><a href="#sudo" class="headerlink" title="sudo"></a>sudo</h3><p>sudo我们一定不陌生，最常用来执行只有root才有权限的操作，事实上，sudo可以以任何其他user身份运行process，不一定非得是root </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo -l        # List available commands.</span><br><span class="line">sudo command   # Run command as root.</span><br><span class="line">sudo -u user command  # Run command as user.</span><br></pre></td></tr></table></figure>
+
+<p>查看sudo程序的属性: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ll &#x2F;usr&#x2F;bin&#x2F;sudo</span><br><span class="line">-rwsr-xr-x 1 root root 146K 1月  18  2018 &#x2F;usr&#x2F;bin&#x2F;sudo</span><br></pre></td></tr></table></figure>
+
+<p>同样开启了setuid bit，owner为root，这样才会执行root专有的操作，sudo工作原理如下:  </p>
+<ul>
+<li> Read and parse /etc/sudoers, look up the invoking user and its permissions,</li>
+<li> Ask the invoking user for a password (this is usually the user’s password, but can also be the target user’s password or skipped as with NOPASSWD)</li>
+<li> Create a child process in which it calls setuid() to change to the target user execute a shell or the command given as arguemnts in this child</li>
+</ul>
+<p>Linux中，child process会继承parent process的RealUserId及EffectiveUserId。 这时子进程本该继承父进程sudo的RealUserId(普通用户)及EffectiveUserId(root)，但sudo会修改其RealUserId及EffectiveUserId为sudo命令行指定的目标用户。  </p>
+<p>注意只有root才可以更改自己及子进程的EffectiveUserId并同时修改RealUserId，除此之外process不允许修改RealUserId。这样sudo就实现了完全以另一个user运行某个进程，完全的意思是RealUserId也会改变。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo .&#x2F;test_setuid</span><br><span class="line"># output</span><br><span class="line">RealUserId: 0 RealUserName root</span><br><span class="line">EffectiveUserId: 1000 EffectiveUserName frankie</span><br></pre></td></tr></table></figure>
+
+<p>可见RealUserId已经被改为root，但是EffectiveUserId由于setuid bit的关系，仍是普通用户frankie。</p>
+<h2 id="Why-saved-effective-id-is-useful"><a href="#Why-saved-effective-id-is-useful" class="headerlink" title="Why saved-effective-id is useful"></a>Why saved-effective-id is useful</h2><p>其实process除了RealUserId及EffectiveUserId之外，还有saved set-user-ID，为什么需要这个呢？</p>
+<blockquote>
+<p>Having a saved user id allows you to drop your privileges (by switching the effective uid to the real one) and then regain them (by switching the effective uid to the saved one) only when needed.</p>
+</blockquote>
+<p>什么意思呢？有时进程需要的User转换需要多次往复转换：假设某程序在执行完root操作后，需要转换为普通用户，从root转换为普通用户是允许的，但是随后还会需要从普通用户转换为root，但这时setuid bit不起作用了，因为这不是首次运行，进程已经完全以普通用户身份运行了，不可能转换为root，怎么办呢？root转换为普通用户之前，会自动将当前的EffectiveUserId(即root)存储到saved-effective-id中，以保证随后可以转换回来。</p>
+<p>APUE关于进程如何在RealUserId，EffectiveUserId，saved-effective-id的作用这方面讲解非常精辟，感兴趣的同学可以看 chap 8.11，这里放一张图大家感受一下： </p>
+<div align="center">
+
+</div>
+
+
+<h2 id="Regarding-Group"><a href="#Regarding-Group" class="headerlink" title="Regarding Group"></a>Regarding Group</h2><p>GroupId有与UserId完全对应的feature: </p>
+<ul>
+<li> setgid bit V.S. setuid</li>
+<li> 相对于process有的Real/Effective/Saved-SetUserId，process有Real/Effective/Saved-SetGroupId</li>
+</ul>
+<p>因此上面针对User的讨论，可以完全对应到Group，设置setgid bit:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chmod g+s targetFile</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="Setuid-pitfalls"><a href="#Setuid-pitfalls" class="headerlink" title="Setuid pitfalls"></a>Setuid pitfalls</h2><p>Setuid在很多情况，尤其设计到权限转换之处非常有用，但是如果不谨慎，及容易造成严重的安全漏洞，所以很多情况会被系统禁止，下面是作者在一个项目中踩过的坑：</p>
+<ul>
+<li> bash/bash script无法设置setuid bit: Linux ignores the setuid¹ bit on all interpreted executables (i.e. executables starting with a #! line)</li>
+<li> ssh不支持setuid。一个例子：parent process开启setuid，在子进程fork&amp;exec child ssh，ssh并不会继承父进程的EffectiveUserId，因为ssh程序一旦发现EffectiveUserId与RealUserId不一致，便会将EffectiveUserId重新设置为RealUserId, 这样是有security concern。</li>
+<li> 无法设置一些重要环境变量，如LD_LIBRARY_PATH:  while executing setuid programs, $LD_LIBRARY_PATH is ignored，同样是security concern，防止因替换系统动态库，普通用户取得root权限。</li>
+</ul>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><ul>
+<li>进程有三组user/group id，是进程动态改变权限的基础<ul>
+<li> RealUserId: 用户登录名</li>
+<li> EffectiveUserId: 当前作用于file permission bit的用户Id</li>
+<li> Saved setuid: 用作权限提升及下降。</li>
+</ul>
+</li>
+<li> EffectiveUserId与file permission bit结合，决定进程对于特定文件的permission access</li>
+<li> setuid通过修改进程EffectiveUserId为进程二进制的owner来实现以另一用户权限运行。</li>
+<li> setuid仅作用于file，对folder无效</li>
+<li> setuid机制可以很方便的改变程序的权限，但是同样也很容易称为系统安全漏洞</li>
+</ul>
+<h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><p>Chap4.4, Chap8.11 Stevens, R., 2013. Advanced Programming in the UNIX Environment. 3rd ed. United States: Pearson Education, Inc.<br><a target="_blank" rel="noopener" href="https://unix.stackexchange.com/questions/18198/gid-current-primary-supplementary-effective-and-real-group-ids">GID, current, primary, supplementary, effective and real group IDs?</a><br><a target="_blank" rel="noopener" href="https://unix.stackexchange.com/questions/80344/how-do-the-internals-of-sudo-work">How do the internals of sudo work</a><br><a target="_blank" rel="noopener" href="https://docs.oracle.com/cd/E19253-01/817-1985/userconcept-35906/index.html">System Administration Guide: Basic Administration</a><br><a target="_blank" rel="noopener" href="https://linuxconfig.org/how-to-use-special-permissions-the-setuid-setgid-and-sticky-bits">How to use special permissions: the setuid, setgid and sticky bits</a><br><a target="_blank" rel="noopener" href="http://researchhubs.com/post/computing/linux-cmd/sudo-command.html">Switching user using sudo</a><br><a target="_blank" rel="noopener" href="https://unix.stackexchange.com/questions/126914/how-does-sudo-really-work">How does sudo really work?</a><br><a target="_blank" rel="noopener" href="https://unix.stackexchange.com/questions/364/allow-setuid-on-shell-scripts">Allow setuid on shell scripts</a><br><a target="_blank" rel="noopener" href="https://www.google.com.au/search?q=setuid+LD_LIBRARY_PATH+ignored&oq=setuid+LD_LIBRARY_PATH+ignored&aqs=chrome..69i57.7027j0j1&client=ubuntu&sourceid=chrome&ie=UTF-8">c - Program can’t load after setting the setuid bit on</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/setuid/" rel="tag"># setuid</a>
+              <a href="/tags/linux/" rel="tag"># linux</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2018/11/07/understand-docker-volume/" rel="prev" title="Understanding Docker Volume">
+                  <i class="fa fa-chevron-left"></i> Understanding Docker Volume
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/11/20/security-tour-using-Golang/" rel="next" title="Security, the big picture - Part I">
+                  Security, the big picture - Part I <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

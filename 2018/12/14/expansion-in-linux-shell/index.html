@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Preface我们在初学shell时，经常会纠结于参数分割，是否需要加引号，单引号还是双引号，有时单引号工作，有时又得双引号。稍不注意，就会得到很unexpect的结果。而经常也会感叹于变量引用的灵活：$PATH $(date) &#96;ls&#96;，让人眼花缭乱。更别提在我们用grep，sed时，那让人目眩的一大串转义字符了，WTF is that?   12345# search in vim&#x2F;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux Shell Expansion and Regular Expressions">
+<meta property="og:url" content="https://elitegoblin.github.io/2018/12/14/expansion-in-linux-shell/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Preface我们在初学shell时，经常会纠结于参数分割，是否需要加引号，单引号还是双引号，有时单引号工作，有时又得双引号。稍不注意，就会得到很unexpect的结果。而经常也会感叹于变量引用的灵活：$PATH $(date) &#96;ls&#96;，让人眼花缭乱。更别提在我们用grep，sed时，那让人目眩的一大串转义字符了，WTF is that?   12345# search in vim&#x2F;">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2018-12-14T06:00:04.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="linux RegularExpressions">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2018/12/14/expansion-in-linux-shell/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2018&#x2F;12&#x2F;14&#x2F;expansion-in-linux-shell&#x2F;&quot;,&quot;path&quot;:&quot;2018&#x2F;12&#x2F;14&#x2F;expansion-in-linux-shell&#x2F;&quot;,&quot;title&quot;:&quot;Linux Shell Expansion and Regular Expressions&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Linux Shell Expansion and Regular Expressions | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Shell-Expansion"><span class="nav-number">2.</span> <span class="nav-text">Shell Expansion</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E6%95%B0%E5%88%86%E5%89%B2"><span class="nav-number">2.1.</span> <span class="nav-text">参数分割</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Pathname-Expansion"><span class="nav-number">2.2.</span> <span class="nav-text">Pathname Expansion</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Parameter-Expansion"><span class="nav-number">2.3.</span> <span class="nav-text">Parameter Expansion</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Command-Substitution"><span class="nav-number">2.4.</span> <span class="nav-text">Command Substitution</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Arithmetic-Expansion"><span class="nav-number">2.5.</span> <span class="nav-text">Arithmetic Expansion</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Brace-Expansion"><span class="nav-number">3.</span> <span class="nav-text">Brace Expansion</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Quote"><span class="nav-number">4.</span> <span class="nav-text">Quote</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Single-Quote"><span class="nav-number">4.1.</span> <span class="nav-text">Single Quote</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Double-Quote"><span class="nav-number">4.2.</span> <span class="nav-text">Double Quote</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Backslash-Quote"><span class="nav-number">4.3.</span> <span class="nav-text">Backslash Quote</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Quote-in-grep-command"><span class="nav-number">5.</span> <span class="nav-text">Quote in grep command</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Regular-expression-metacharacters"><span class="nav-number">6.</span> <span class="nav-text">Regular expression metacharacters</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Extended-Regular-Expressions-ERE"><span class="nav-number">6.1.</span> <span class="nav-text">Extended Regular Expressions(ERE)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#POSIX-Basic-Regular-Expressions-BRE"><span class="nav-number">6.2.</span> <span class="nav-text">POSIX Basic Regular Expressions(BRE)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Shell-metacharacter"><span class="nav-number">7.</span> <span class="nav-text">Shell metacharacter</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Common-tools%E2%80%99s-regular-expressions"><span class="nav-number">8.</span> <span class="nav-text">Common tools’s regular expressions</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Conclusion"><span class="nav-number">9.</span> <span class="nav-text">Conclusion</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Further-reading"><span class="nav-number">10.</span> <span class="nav-text">Further reading</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2018/12/14/expansion-in-linux-shell/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux Shell Expansion and Regular Expressions
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-12-14 14:00:04" itemprop="dateCreated datePublished" datetime="2018-12-14T14:00:04+08:00">2018-12-14</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>我们在初学shell时，经常会纠结于参数分割，是否需要加引号，单引号还是双引号，有时单引号工作，有时又得双引号。稍不注意，就会得到很unexpect的结果。而经常也会感叹于变量引用的灵活：$PATH $(date) `ls`，让人眼花缭乱。更别提在我们用grep，sed时，那让人目眩的一大串转义字符了，WTF is that?  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># search in vim</span><br><span class="line">&#x2F;([0-9]\&#123;3\&#125;) [0-9]\&#123;3\&#125;-[0-9]\&#123;4\&#125;</span><br><span class="line"># sed to process </span><br><span class="line">sed &#39;s&#x2F;\([0-9]\&#123;2\&#125;\)\&#x2F;\([0-9]\&#123;2\&#125;\)\&#x2F;\([0-9]\&#123;4\&#125;\</span><br><span class="line">)$&#x2F;\3-\1-\2&#x2F;&#39; distros.txt</span><br></pre></td></tr></table></figure>
+
+　
+
+<span id="more"></span>
+
+<p>这背后是由于shell对参数做的特殊转换机制起作用: shell expansion，也是一个较为tricky的特性，是造成shell恐惧症的一大源泉。  </p>
+<p>本文中，我们将建立起shell expansion的知识框架，同时回答下列问题:  </p>
+<ul>
+<li> shell expansion分类</li>
+<li> 单引号，双引号作用，分别解决什么问题</li>
+<li> expansion在grep/egrep中的使用，并解释之前grep及sed正则表达式含义</li>
+</ul>
+<p>希望在阅读完本文后，能让你对shell的使用更得心应手。</p>
+<h2 id="Shell-Expansion"><a href="#Shell-Expansion" class="headerlink" title="Shell Expansion"></a>Shell Expansion</h2><h3 id="参数分割"><a href="#参数分割" class="headerlink" title="参数分割"></a>参数分割</h3><p>我们先看一下shell中对于参数是如何分割的，这是理解shell执行程序的第一步：</p>
+<blockquote>
+<p>Spaces, tabs, and newlines (linefeed characters) and treats them as delimiters [^1]</p>
+</blockquote>
+<p>就是将空格，tab，换行算作delimter，一视同仁，不算做传入的参数。</p>
+<h3 id="Pathname-Expansion"><a href="#Pathname-Expansion" class="headerlink" title="Pathname Expansion"></a>Pathname Expansion</h3><p>Shell中的匹配路径的wildcard生效的过程，就是在expand wildcard，将其转换为一个或者一类pathname集合，与regular expression尽管有一些相似，是完全不同的机制，wildcard仅用作路径匹配。最常见*, ?, []</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 打印&#x2F;tmp全部文件名称</span><br><span class="line">[me@ubuntu ~]$ echo &#x2F;tmp&#x2F;*</span><br></pre></td></tr></table></figure>
+
+<p>为什么叫expansion呢？*字符会替换为/tmp目录下的全部文件名，一个*字符得到一个集合，厉害吧。</p>
+<p>同样~字符，等同于当前用户的home directory，称为Tilde Expansion。</p>
+<p>Bash supports the following three simple wildcards:</p>
+<blockquote>
+<p>* - Matches any string, including the null string<br>? - Matches any single (one) character.<br>[…] - Matches any one of the enclosed characters.</p>
+</blockquote>
+<h3 id="Parameter-Expansion"><a href="#Parameter-Expansion" class="headerlink" title="Parameter Expansion"></a>Parameter Expansion</h3><p>非常常见的一种形式，完成变量替换</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[me@ubuntu ~]$ echo $USER</span><br></pre></td></tr></table></figure>
+
+<h3 id="Command-Substitution"><a href="#Command-Substitution" class="headerlink" title="Command Substitution"></a>Command Substitution</h3><p>同样很常见，用一个命令的输出来expand表达式</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 括号形式</span><br><span class="line">[me@ubuntu ~]$ echo $(ls)</span><br><span class="line">[me@ubuntu ~]$ ls -l $(which cp)</span><br><span class="line"># back quote形式</span><br><span class="line">[me@ubuntu ~]$ ls -l &#96;which cp&#96;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Arithmetic-Expansion"><a href="#Arithmetic-Expansion" class="headerlink" title="Arithmetic Expansion"></a>Arithmetic Expansion</h3><p>format为: $((expression))，以四则运算为expansion。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[me@ubuntu ~]$ echo $((2 + 2))</span><br><span class="line">[me@ubuntu ~]$ echo $(($((5**2)) * 3))</span><br></pre></td></tr></table></figure>
+
+<h2 id="Brace-Expansion"><a href="#Brace-Expansion" class="headerlink" title="Brace Expansion"></a>Brace Expansion</h2><p>通过规则，枚举等expand成为集合，分为两种：</p>
+<ul>
+<li> comma separated list of strings，以逗号分割</li>
+<li> range of integers and strings，以..来标明范围</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[me@ubuntu ~]$ echo Front-&#123;A,B,C&#125;-Back</span><br><span class="line">Front-A-Back Front-B-Back Front-C-Back</span><br><span class="line">[me@ubuntu ~]$ echo Number_&#123;1..5&#125;</span><br><span class="line">Number_1 Number_2 Number_3 Number_4 Number_5</span><br><span class="line">[me@ubuntu ~]$ echo a&#123;A&#123;1,2&#125;,B&#123;3,4&#125;&#125;b</span><br><span class="line">aA1b aA2b aB3b aB4b</span><br></pre></td></tr></table></figure>
+
+<p>注意brace内{}，不能包含unqoted whitespace。  </p>
+<p>什么是quote，为什么要quote呢？</p>
+<h2 id="Quote"><a href="#Quote" class="headerlink" title="Quote"></a>Quote</h2><p>前面提到的各种expansion，由不同的具有特殊意义的char控制: <strong>$</strong>, <strong>{}</strong>, `等。就像一词多义，这些字符被当做特殊字符，本身与其他字符结合一起有特殊的meaning。我们仅仅想输出这些普通字符怎么办呢：quote，即用引号来消除特殊字符的含义，有两种quote: double quote和single quote，single character quote。</p>
+<blockquote>
+<p>shell provides a mechanism called quoting to selectively suppress unwanted expansions</p>
+</blockquote>
+<h3 id="Single-Quote"><a href="#Single-Quote" class="headerlink" title="Single Quote"></a>Single Quote</h3><p>To suppress all expansions，简单粗暴，被单引号quote的字符串的任何char都被当做普通char,失去special meaning。 </p>
+<h3 id="Double-Quote"><a href="#Double-Quote" class="headerlink" title="Double Quote"></a>Double Quote</h3><p>被quote的字符失去special meaning，除了三个:  <strong>$</strong>, *<em>\*</em>, **`**。</p>
+<h3 id="Backslash-Quote"><a href="#Backslash-Quote" class="headerlink" title="Backslash Quote"></a>Backslash Quote</h3><p>和c语言中的转义字符类似，\字符使接下来的字符失去特殊含义。除了一种情况：\newline：作用是将newline从input中<em>消除</em>，或者说ignore，用在format script时，将一行script拆分为多行，但不会造成副作用。一个有意思的事实是：single quote包围的字符串，无法用backslash使字符串包含’字符。</p>
+<h2 id="Quote-in-grep-command"><a href="#Quote-in-grep-command" class="headerlink" title="Quote in grep command"></a>Quote in grep command</h2><p>quote带给人的恐惧尤其表现在当你想在shell中应用正则时，那一长串酸爽的backslash字符，本身正则就容易让人费解，quote will make it worse。  </p>
+<p>其实并不难，我们首先理解键入grep后的整个过程： 以 echo “abcc” | grep ‘ab.*$’ 为例</p>
+<ul>
+<li> shell fork child process：　grep</li>
+<li> 在argv[1]中传入字符串参数 ab.*$</li>
+<li> grep　以收到的字符串参数为pattern进行匹配</li>
+</ul>
+<p>这是最常见的情况，single quote禁止所有expansion，被quote部分为正则字串，我们再试一个命令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[me@ubuntu ~]$ echo &quot;123&quot; | grep &#39;[0-9]&#123;3&#125;&#39;</span><br></pre></td></tr></table></figure>
+
+<p>结果并没有匹配。为什么呢？</p>
+<p>我们需要先停下来，搞懂一些基本知识：包括shell的metachar，正则metacharacter，知道了正则依赖的特殊字符，才能正确quote，避免常见的pitfall。</p>
+<h2 id="Regular-expression-metacharacters"><a href="#Regular-expression-metacharacters" class="headerlink" title="Regular expression metacharacters"></a>Regular expression metacharacters</h2><p>正则的metacharacter有：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">^ $ . [ ] &#123; &#125; - ? * + ( ) | \</span><br></pre></td></tr></table></figure>
+
+<p>其实并不完全正确，正则以metacharacter集合不同分为两类：</p>
+<h3 id="Extended-Regular-Expressions-ERE"><a href="#Extended-Regular-Expressions-ERE" class="headerlink" title="Extended Regular Expressions(ERE)"></a>Extended Regular Expressions(ERE)</h3><p>上面提到的metacharacter，也即我们一般最常用的，其实是已经被Extended过的，egrep和grep -E使用的正是ERE。</p>
+<h3 id="POSIX-Basic-Regular-Expressions-BRE"><a href="#POSIX-Basic-Regular-Expressions-BRE" class="headerlink" title="POSIX Basic Regular Expressions(BRE)"></a>POSIX Basic Regular Expressions(BRE)</h3><p>仅识别 ^ $ . [ ] * 作为metachar，其他的都当做literal，对比ERE，以下字符被识别为literal </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">( ) &#123; &#125; ? + |</span><br></pre></td></tr></table></figure>
+
+<p>一个有趣，同时也比较容易在使用中造成confusion的事实是，BRE backslash quote了{}, []，不会将其认为literal，而是等同于ERE语法的meta char：</p>
+<blockquote>
+<p>However (and this is the fun part), the “(”, “)”, “{”, and “}” characters are treated as<br>metacharacters in BRE if they are escaped with a backslash, whereas with ERE, preceding any metacharacter with a backslash causes it to be treated as a literal.</p>
+</blockquote>
+<p>看一个栗子：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[me@ubuntu ~]$ echo &quot;123&quot; | grep &#39;[0-9]&#123;3&#125;&#39; --color&#x3D;auto</span><br><span class="line"># 无输出，符合预期，&#123; &#125; 属于ERE</span><br><span class="line">[me@ubuntu ~]$ echo &quot;123&quot; | grep &#39;[0-9]\&#123;3\&#125;&#39; --color&#x3D;auto</span><br><span class="line">123</span><br><span class="line"># BRE quote了 &#123; &#125;使其被认作ERE</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="Shell-metacharacter"><a href="#Shell-metacharacter" class="headerlink" title="Shell metacharacter"></a>Shell metacharacter</h2><p>我们在shell运行命令时，先由shell expand parameters，然后再将expand的结果送入程序，因此我们应该避免正则的metacharacter被shell 错误的expand或者解析。尤其注意与正则重叠的字符：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">|   &#x2F;&#x2F; pipe</span><br><span class="line">?   &#x2F;&#x2F; Matching single char</span><br><span class="line">*   &#x2F;&#x2F; Matching any char</span><br><span class="line">[ ] &#x2F;&#x2F; Mating, eg: ls -l e[abc].txt</span><br><span class="line">$   &#x2F;&#x2F; Parameter expansion</span><br><span class="line">( ) &#x2F;&#x2F; Group Command</span><br><span class="line">&#123; &#125; &#x2F;&#x2F; Brace Expansion, Parameter Expansion: $&#123;var&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Common-tools’s-regular-expressions"><a href="#Common-tools’s-regular-expressions" class="headerlink" title="Common tools’s regular expressions"></a>Common tools’s regular expressions</h2><ul>
+<li>支持BRE<ul>
+<li> grep</li>
+<li> vim</li>
+<li> sed[^3]</li>
+</ul>
+</li>
+<li>支持ERE<ul>
+<li> grep -E</li>
+<li> egrep</li>
+</ul>
+</li>
+</ul>
+<h2 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h2><ul>
+<li> 核心问题是shell运行命令时，如何将参数传递给命令子进程的。</li>
+<li> shell的参数由space分割</li>
+<li> 在shell运行程序时，shell会对其metachar进行expand，expand后再将参数传入程序</li>
+<li> bash的meta characters: <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&gt;   Output redirection, (see File Redirection)</span><br><span class="line">&gt;&gt;  Output redirection (append)</span><br><span class="line">&lt;   Input redirection</span><br><span class="line">*   File substitution wildcard; zero or more characters</span><br><span class="line">?   File substitution wildcard; one character</span><br><span class="line">[ ] File substitution wildcard; any character between brackets</span><br><span class="line">&#96;cmd&#96;   Command Substitution</span><br><span class="line">$(cmd)  Command Substitution</span><br><span class="line">|   The Pipe (|)</span><br><span class="line">;   Command sequence, Sequences of Commands</span><br><span class="line">||  OR conditional execution</span><br><span class="line">&amp;&amp;  AND conditional execution</span><br><span class="line">( ) Group commands, Sequences of Commands</span><br><span class="line">&amp;   Run command in the background, Background Processes</span><br><span class="line">#   Comment</span><br><span class="line">$   Expand the value of a variable</span><br><span class="line">\   Prevent or escape interpretation of the next character</span><br><span class="line">&lt;&lt;  Input redirection (see Here Documents)</span><br></pre></td></tr></table></figure></li>
+<li>正则分为BRE和ERE，各自的meta characters<ul>
+<li> BRE: ^ $ . [ ] * </li>
+<li> ERE: ^ $ . [ ] { } - ? * + ( ) | \</li>
+<li> BRE可以用\将[] {}　识别为meta character，与ERE意义相同。</li>
+</ul>
+</li>
+<li> 用egrep + single quote可以满足最常见的正则应用。vim，sed均采用BRE</li>
+</ul>
+<h2 id="Further-reading"><a href="#Further-reading" class="headerlink" title="Further reading"></a>Further reading</h2><p><a target="_blank" rel="noopener" href="https://unix.stackexchange.com/questions/32907/what-characters-do-i-need-to-escape-when-using-sed-in-a-sh-script">What characters do I need to escape when using sed in a sh script?</a>  </p>
+<p>[^1]: The Linux Command Line Chap7: Seeing The World As The Shell Sees It<br>[^2]: 见<a target="_blank" rel="noopener" href="http://www.angelfire.com/mi/genastorhotz/reality/computers/linux/bashmetachars.html">BASH Metacharacters and Their Meanings</a><br>[^3]: <a target="_blank" rel="noopener" href="http://users.monash.edu.au/~erict/Resources/sed/">sed</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux-RegularExpressions/" rel="tag"># linux RegularExpressions</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2018/11/20/security-tour-using-Golang/" rel="prev" title="Security, the big picture - Part I">
+                  <i class="fa fa-chevron-left"></i> Security, the big picture - Part I
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2018/12/18/Reviw-Slice-Internal-When-Solving-A-Golang-Puzzle/" rel="next" title="Review Slice Internal When Solving A Golang Puzzle">
+                  Review Slice Internal When Solving A Golang Puzzle <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

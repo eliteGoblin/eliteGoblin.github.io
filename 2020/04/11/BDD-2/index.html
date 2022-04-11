@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Preface接上篇, BDD解决的问题及与TDD的区别; 以及Given-When-Then语法.  继续看如何用ginkgo框架实现Behaviour Test.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Golang BDD入门: Ginkgo和Gomega实现(2)">
+<meta property="og:url" content="https://elitegoblin.github.io/2020/04/11/BDD-2/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Preface接上篇, BDD解决的问题及与TDD的区别; 以及Given-When-Then语法.  继续看如何用ginkgo框架实现Behaviour Test.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/ginkgo.jpg">
+<meta property="og:image" content="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20200412152437.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20200412194916.png">
+<meta property="article:published_time" content="2020-04-11T03:45:15.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="Golang">
+<meta property="article:tag" content="testing">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/ginkgo.jpg">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2020/04/11/BDD-2/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2020&#x2F;04&#x2F;11&#x2F;BDD-2&#x2F;&quot;,&quot;path&quot;:&quot;2020&#x2F;04&#x2F;11&#x2F;BDD-2&#x2F;&quot;,&quot;title&quot;:&quot;Golang BDD入门: Ginkgo和Gomega实现(2)&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Golang BDD入门: Ginkgo和Gomega实现(2) | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9D%E8%AF%86Ginkgo"><span class="nav-number">2.</span> <span class="nav-text">初识Ginkgo</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E4%B8%AAGinkgo%E4%BE%8B%E5%AD%90"><span class="nav-number">3.</span> <span class="nav-text">第一个Ginkgo例子</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-number">3.1.</span> <span class="nav-text">初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C"><span class="nav-number">3.2.</span> <span class="nav-text">运行</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ginkgo%E5%85%B3%E9%94%AE%E8%AF%8D"><span class="nav-number">4.</span> <span class="nav-text">Ginkgo关键词</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Describe-Context-When"><span class="nav-number">4.1.</span> <span class="nav-text">Describe, Context, When</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#It"><span class="nav-number">4.2.</span> <span class="nav-text">It</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#BeforeEach-JustBeforeEach"><span class="nav-number">4.3.</span> <span class="nav-text">BeforeEach, JustBeforeEach</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Demo-code-%E5%88%86%E6%9E%90"><span class="nav-number">4.4.</span> <span class="nav-text">Demo code 分析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#It-%E4%B8%8EMatcher"><span class="nav-number">5.</span> <span class="nav-text">It 与Matcher</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E5%B8%B8%E7%94%A8Feature"><span class="nav-number">6.</span> <span class="nav-text">其他常用Feature</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2020/04/11/BDD-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Golang BDD入门: Ginkgo和Gomega实现(2)
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2020-04-11 11:45:15" itemprop="dateCreated datePublished" datetime="2020-04-11T11:45:15+08:00">2020-04-11</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <p><img src="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/ginkgo.jpg" alt="ginkgo.jpg"></p>
+<h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>接<a target="_blank" rel="noopener" href="https://www.franksun.cn/2019/11/28/BDD-1/">上篇</a>, BDD解决的问题及与TDD的区别; 以及<code>Given-When-Then</code>语法. </p>
+<p>继续看如何用ginkgo框架实现Behaviour Test.</p>
+<span id="more"></span>
+
+<h2 id="初识Ginkgo"><a href="#初识Ginkgo" class="headerlink" title="初识Ginkgo"></a>初识Ginkgo</h2><p>ginkgo, <a target="_blank" rel="noopener" href="https://github.com/onsi/ginkgo">github</a>上3800+ stars, 是最流行的BDD框架. </p>
+<p>回顾上篇的购物车例子，先直观感受ginkgo测试代码: </p>
+<blockquote>
+<p>初始状态购物车为空(Given)</p>
+</blockquote>
+<blockquote>
+<p>当添加1个商品A时(When)<br>    购物车商品列表个数为1 (Then)<br>    购物车商品列表不重复商品个数为1 (Then)<br>    购物车总价显示A的价格 (Then)</p>
+</blockquote>
+<blockquote>
+<p>当添加1个商品A, 2个B时(When)<br>    购物车商品个数为3 (Then)<br>    购物车商品列表不重复商品个数为2 (Then)<br>    购物车总价显示价格A+2*B(Then)</p>
+</blockquote>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> _ = Describe(<span class="string">&quot;GinkoCart&quot;</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">var</span> (</span><br><span class="line">		cart *ginko_cart.Cart</span><br><span class="line">		err error</span><br><span class="line">	)</span><br><span class="line">	Context(<span class="string">`Start with empty cart`</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">		BeforeEach(<span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">			cart = ginko_cart.NewCart()</span><br><span class="line">		&#125;)</span><br><span class="line">		When(<span class="string">`Add One A item to cart`</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">			BeforeEach(<span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">				err = cart.AddItem(ginko_cart.Item&#123;</span><br><span class="line">					Name: <span class="string">&quot;A&quot;</span>,</span><br><span class="line">					Price: <span class="number">3.99</span>,</span><br><span class="line">					Qty  : <span class="number">1</span>,</span><br><span class="line">				&#125;)</span><br><span class="line">			&#125;)</span><br><span class="line">			It(<span class="string">`Should no error`</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">				Expect(err).To(BeNil())</span><br><span class="line">			&#125;)</span><br><span class="line">			It(<span class="string">`Should display items count as 1`</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">				Expect(cart.TotalItems()).To(Equal(<span class="number">1</span>))</span><br><span class="line">			&#125;)</span><br><span class="line">			It(<span class="string">`Should display items count as 1`</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">				Expect(cart.TotalUniqueItems()).To(Equal(<span class="number">1</span>))</span><br><span class="line">			&#125;)</span><br><span class="line">			It(<span class="string">`Should display items total price as A`</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">				Expect(cart.TotalPrice()).To(Equal(<span class="number">3.99</span>))</span><br><span class="line">			&#125;)</span><br><span class="line">		&#125;)</span><br><span class="line">		When(<span class="string">`Add One A and Two B item to cart`</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">			BeforeEach(<span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">				err = cart.AddItem(ginko_cart.Item&#123;</span><br><span class="line">					Name: <span class="string">&quot;A&quot;</span>,</span><br><span class="line">					Price: <span class="number">3.99</span>,</span><br><span class="line">					Qty  : <span class="number">1</span>,</span><br><span class="line">				&#125;)</span><br><span class="line">				Expect(err).To(BeNil())</span><br><span class="line">				err = cart.AddItem(ginko_cart.Item&#123;</span><br><span class="line">					Name: <span class="string">&quot;B&quot;</span>,</span><br><span class="line">					Price: <span class="number">12.99</span>,</span><br><span class="line">					Qty  : <span class="number">2</span>,</span><br><span class="line">				&#125;)</span><br><span class="line">				Expect(err).To(BeNil())</span><br><span class="line">			&#125;)</span><br><span class="line">			It(<span class="string">`Should display items count as 3`</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">				Expect(cart.TotalItems()).To(Equal(<span class="number">3</span>))</span><br><span class="line">			&#125;)</span><br><span class="line">			It(<span class="string">`Should display unique items count as 2`</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">				Expect(cart.TotalUniqueItems()).To(Equal(<span class="number">2</span>))</span><br><span class="line">			&#125;)</span><br><span class="line">			It(<span class="string">`Should display items total price as A+B`</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">				Expect(cart.TotalPrice()).To(Equal(<span class="number">3.99</span>+<span class="number">2</span>*<span class="number">12.99</span>))</span><br><span class="line">			&#125;)</span><br><span class="line">		&#125;)</span><br><span class="line">	&#125;)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>Test code可读性很高: key word和annotation可以与自然语言一一转换. </p>
+<p>ginkgo与Javascript BDD框架高度相似, 可见两者关键词几乎完全一致: </p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">describe(<span class="string">&quot;A spec&quot;</span>, <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  it(<span class="string">&quot;is just a function, so it can contain any code&quot;</span>, <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> foo = <span class="number">0</span>;</span><br><span class="line">    foo += <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    expect(foo).toEqual(<span class="number">1</span>);</span><br><span class="line">  &#125;);</span><br><span class="line"></span><br><span class="line">  it(<span class="string">&quot;can have more than one expectation&quot;</span>, <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> foo = <span class="number">0</span>;</span><br><span class="line">    foo += <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    expect(foo).toEqual(<span class="number">1</span>);</span><br><span class="line">    expect(<span class="literal">true</span>).toEqual(<span class="literal">true</span>);</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>Ginkgo的<a target="_blank" rel="noopener" href="https://onsi.github.io/ginkgo/">document</a>是很好的start up guide.</p>
+<h2 id="第一个Ginkgo例子"><a href="#第一个Ginkgo例子" class="headerlink" title="第一个Ginkgo例子"></a>第一个Ginkgo例子</h2><p>Ginkgo依托于golang原生testing框架, 即可用<code>go test ./...</code>运行, 也可通过ginkgo binary(安装<code>go install github.com/onsi/ginkgo</code>). 封装了ginko测试框架的各种feature, 实际中我用的很少, 仅用来初始化测试代码. </p>
+<p>本节通过简单购物车例子了解如何写BDD测试代码, 完整的例子代码在<a target="_blank" rel="noopener" href="https://github.com/eliteGoblin/code_4_blog/tree/master/ginkgo_cart">github</a></p>
+<h3 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h3><p>首先进入待测试package:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> code_4_blog/ginkgo_cart</span><br></pre></td></tr></table></figure>
+
+<p>初始化</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ginkgo bootstrap</span><br></pre></td></tr></table></figure>
+
+<p>生成以suite_test.go文件, 将ginko嵌入testing, 用<code>go test ./...</code>可运行Ginkgo测试代码. </p>
+<p>以上生成了新test suite, 接下来向suite添加测试specs, 生成ginkgo_cart package测试文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ginkgo generate ginkgo_cart</span><br></pre></td></tr></table></figure>
+
+<h3 id="运行"><a href="#运行" class="headerlink" title="运行"></a>运行</h3><p>生成<code>ginko_cart_test.go</code>, 注意测试文件在<code>ginko_cart_test</code>package, 需import package<code>ginko_cart</code>. 目的是: BDD层级高于Unit test, 不应了解package内部实现, 测试package外部接口即可. </p>
+<p>编写测试代码，运行: <code>go test ./...</code>, </p>
+<p><img src="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20200412152437.png" alt="20200412152437.png"></p>
+<h2 id="Ginkgo关键词"><a href="#Ginkgo关键词" class="headerlink" title="Ginkgo关键词"></a>Ginkgo关键词</h2><p>Ginkgo测试代码骨架由一系列关键词关联的闭包组成, 常用key word有</p>
+<ul>
+<li> Describe/Context/When: 测试逻辑块</li>
+<li> BeforeEach/AfterEach/JustBeforeEach/JustAfterEach: 初始化测试用例块</li>
+<li> It: 单一Spec, 测试case</li>
+</ul>
+<p>Key word的声明均为传入body函数, 如Describe</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Describe(text <span class="keyword">string</span>, body <span class="function"><span class="keyword">func</span><span class="params">()</span>) <span class="title">bool</span></span></span><br></pre></td></tr></table></figure>
+
+<p>Sample代码片段: 以分析执行顺序 </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> _ = Describe(<span class="string">&quot;Nest Test Demo&quot;</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">	Context(<span class="string">&quot;MyTest level1&quot;</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		BeforeEach(<span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">			fmt.Println(<span class="string">&quot;beforeEach level 1&quot;</span>)</span><br><span class="line">		&#125;)</span><br><span class="line">		It(<span class="string">&quot;spec 3-1 in level1&quot;</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span>&#123;</span><br><span class="line">			fmt.Println(<span class="string">&quot;sepc on level 1&quot;</span>)</span><br><span class="line">		&#125;)</span><br><span class="line">		Context(<span class="string">&quot;MyTest level2&quot;</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">			BeforeEach(<span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">				fmt.Println(<span class="string">&quot;beforeEach level 2&quot;</span>)</span><br><span class="line">			&#125;)</span><br><span class="line">			Context(<span class="string">&quot;MyTest level3&quot;</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">				BeforeEach(<span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">					fmt.Println(<span class="string">&quot;beforeEach level 3&quot;</span>)</span><br><span class="line">				&#125;)</span><br><span class="line">				It(<span class="string">&quot;spec 3-1 in level3&quot;</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">					fmt.Println(<span class="string">&quot;A simple spec in level 3&quot;</span>)</span><br><span class="line">				&#125;)</span><br><span class="line">				It(<span class="string">&quot;3-2 in level3&quot;</span>, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">					fmt.Println(<span class="string">&quot;A simple spec in level 3&quot;</span>)</span><br><span class="line">				&#125;)</span><br><span class="line">			&#125;)</span><br><span class="line">		&#125;)</span><br><span class="line">	&#125;)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<h3 id="Describe-Context-When"><a href="#Describe-Context-When" class="headerlink" title="Describe, Context, When"></a>Describe, Context, When</h3><p>三者被称为Container: 对Ginkgo均属同类节, 仅名称不一样. </p>
+<p>一般Describe用于最顶层: 描述完整的测试场景; 包含Context/When, Context/When本身可以嵌套包含下级Context/When.</p>
+<p>Describe, Context, When组织成Tree结构: Describe是root, Context和When是普通TreeNode. </p>
+<p>三者可以包含的节点，除了自身，还包括其他Key word节点: BeforeEach, JustBeforeEach, It. </p>
+<p>测试代码逻辑应包裹在BeforeEach, JustBeforeEach, It中，不应直接在Container node实现. </p>
+<h3 id="It"><a href="#It" class="headerlink" title="It"></a>It</h3><p>Ginko执行以It的基本单元: 以定义的顺序执行(It数即为Ginkgo中的Spec数). 示例定义三个It node, 处于不同层次. 执行顺序为: <code>It 1-1</code>, <code>It 3-1</code>, <code>It 3-2</code>. </p>
+<p>It一般包含Assertion逻辑: <code>Exect(...)</code>, 即最终的测试结果和预期的比较. </p>
+<p>测试执行逻辑实现于BeforeEach, JustBeforeEach中.   </p>
+<h3 id="BeforeEach-JustBeforeEach"><a href="#BeforeEach-JustBeforeEach" class="headerlink" title="BeforeEach, JustBeforeEach"></a>BeforeEach, JustBeforeEach</h3><p><code>BeforeEach</code>声明于Container节点内部, container node每个child执行前都会执行<code>BeforeEach</code>. 一般用来Setup test env: 声明测试用变量, 初始化</p>
+<p><code>JustBeforeEach</code>很类似, 区别是永远执行于<code>BeforeEach</code>之后: 等从root到It node所有<code>BeforeEach</code>执行完;才再从root到It node执行所有<code>JustBeforeEach</code>; 一般实现测试执行逻辑: 如request HTTP, 添加商品到购物车. 总之是得出输出，以便<code>It</code> node与expect比较.</p>
+<h3 id="Demo-code-分析"><a href="#Demo-code-分析" class="headerlink" title="Demo code 分析"></a>Demo code 分析</h3><p>示例各种节点内部组成为Tree:</p>
+<p><img src="https://raw.githubusercontent.com/eliteGoblin/images/master/blog/img/picgo/20200412194916.png" alt="20200412194916.png"></p>
+<p>运行示例得到输出: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">beforeEach level 1</span><br><span class="line">sepc 1-1 on level 1</span><br><span class="line">•beforeEach level 1</span><br><span class="line">beforeEach level 2</span><br><span class="line">beforeEach level 3</span><br><span class="line">Spec 3-1 in level 3</span><br><span class="line">•beforeEach level 1</span><br><span class="line">beforeEach level 2</span><br><span class="line">beforeEach level 3</span><br><span class="line">Spec 3-2 in level 3</span><br></pre></td></tr></table></figure>
+
+<p>可见: </p>
+<ul>
+<li> 是以各<code>It</code> node定义顺序执行</li>
+<li> 每个<code>It</code>执行前，走了从root到<code>It</code>的path: 顺序执行各context node的<code>BeforeEach</code>函数</li>
+</ul>
+<p>为什么是层次结构呢? <code>BeforeEach</code>实现本层Context environment setup, 本层测试逻辑出现分支: 有了Context子节点, 次层的<code>BeforeEach</code>定制次层的environment, 并再次分支: 再继续延伸出子Context…</p>
+<h2 id="It-与Matcher"><a href="#It-与Matcher" class="headerlink" title="It 与Matcher"></a>It 与Matcher</h2><p>购物车demo中: 其中一个It</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Expect(cart.TotalItems()).To(Equal(<span class="number">3</span>))</span><br></pre></td></tr></table></figure>
+<p>这种自然语言风格的assertion是由Ginkgo配套的Gomega实现的: expect返回封装了测试输出值的Assertion:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Expect</span><span class="params">(actual <span class="keyword">interface</span>&#123;&#125;, extra ...<span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">Assertion</span></span></span><br></pre></td></tr></table></figure>
+
+<p>Assertion是interface, 简化版本(为语义通顺，还包含几个类似function):</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Assertion <span class="keyword">interface</span> &#123;</span><br><span class="line">	To(matcher types.GomegaMatcher, optionalDescription ...<span class="keyword">interface</span>&#123;&#125;) <span class="keyword">bool</span></span><br><span class="line">	ToNot(matcher types.GomegaMatcher, optionalDescription ...<span class="keyword">interface</span>&#123;&#125;) <span class="keyword">bool</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>To</code>接收<code>GomegaMatcher</code>, 其封装了Expect value: Equal调用了Ginkgo的EqualMatcher. </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Equal</span><span class="params">(expected <span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">types</span>.<span class="title">GomegaMatcher</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> &amp;matchers.EqualMatcher&#123;</span><br><span class="line">		Expected: expected,</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>加上Assertion封装了实际value, 两者的比较可得出结论.而<code>ToNot</code>是<code>To</code>的相反情况. </p>
+<p>如果想比较自定义的复杂类型: 可实现GomegaMatcher:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> GomegaMatcher <span class="keyword">interface</span> &#123;</span><br><span class="line">	Match(actual <span class="keyword">interface</span>&#123;&#125;) (success <span class="keyword">bool</span>, err error)</span><br><span class="line">	FailureMessage(actual <span class="keyword">interface</span>&#123;&#125;) (message <span class="keyword">string</span>)</span><br><span class="line">	NegatedFailureMessage(actual <span class="keyword">interface</span>&#123;&#125;) (message <span class="keyword">string</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="其他常用Feature"><a href="#其他常用Feature" class="headerlink" title="其他常用Feature"></a>其他常用Feature</h2><p>Focus:</p>
+<p>仅执行特定Node及之下的It: 在keyword之前加<code>F</code>: <code>FContext</code>, <code>FIt</code>, 但会使<code>go test</code>fail(返回 1), CI集成Ginkgo需注意.</p>
+<p>Pending</p>
+<p>与Focus相反: 不执行特定Node及之下的It.  在keyword之前加<code>X</code>.但默认不会使<code>go test</code> fail(若想让其fail, 加 –failOnPending)</p>
+<p>Skip:</p>
+<p>根据代码runtime结果决定是否跳过某It(Pending是编译时): </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">It(&quot;spec 1-1 in level1&quot;, func()&#123;</span><br><span class="line">    if somecondition &#123;</span><br><span class="line">        Skip(&quot;special condition wasn&#39;t met&quot;)</span><br><span class="line">    &#125;</span><br><span class="line">    fmt.Println(&quot;sepc 1-1 on level 1&quot;)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p>Skip仅能置于It之下，否则会Panic.</p>
+<p>Eventually</p>
+<p>测试异步逻辑: 如发送请求到队列, 需持续polling. 在Gomega实现: </p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Eventually(<span class="function"><span class="keyword">func</span><span class="params">()</span> []<span class="title">int</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> thing.SliceImMonitoring</span><br><span class="line">&#125;, TIMEOUT, POLLING_INTERVAL).Should(HaveLen(<span class="number">2</span>))</span><br></pre></td></tr></table></figure>
+
+<p>TIMTOUT为总超时时间, 默认１s;POLLING_INTERVAL为每次polling间隔, 默认10ms.</p>
+<p>Ginkgo还支持benchmark及run in parallel, 可参考<a target="_blank" rel="noopener" href="https://onsi.github.io/ginkgo/#parallel-specs">Ginkgo doc</a></p>
+<p>祝大家BDD愉快！</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Golang/" rel="tag"># Golang</a>
+              <a href="/tags/testing/" rel="tag"># testing</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2020/04/04/error-propagation-in-HTTP-server/" rel="prev" title="Golang HTTP server中的error propagation">
+                  <i class="fa fa-chevron-left"></i> Golang HTTP server中的error propagation
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2020/04/23/Learn-more-study-less/" rel="next" title="Learn more, study less">
+                  Learn more, study less <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

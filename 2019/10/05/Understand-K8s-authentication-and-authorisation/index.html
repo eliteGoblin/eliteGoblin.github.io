@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.3/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="next-config" data-name="main" type="application/json">{&quot;hostname&quot;:&quot;elitegoblin.github.io&quot;,&quot;root&quot;:&quot;&#x2F;&quot;,&quot;images&quot;:&quot;&#x2F;images&quot;,&quot;scheme&quot;:&quot;Muse&quot;,&quot;version&quot;:&quot;8.4.0&quot;,&quot;exturl&quot;:false,&quot;sidebar&quot;:{&quot;position&quot;:&quot;left&quot;,&quot;display&quot;:&quot;post&quot;,&quot;padding&quot;:18,&quot;offset&quot;:12},&quot;copycode&quot;:false,&quot;bookmark&quot;:{&quot;enable&quot;:false,&quot;color&quot;:&quot;#222&quot;,&quot;save&quot;:&quot;auto&quot;},&quot;fancybox&quot;:false,&quot;mediumzoom&quot;:false,&quot;lazyload&quot;:false,&quot;pangu&quot;:false,&quot;comments&quot;:{&quot;style&quot;:&quot;tabs&quot;,&quot;active&quot;:null,&quot;storage&quot;:true,&quot;lazyload&quot;:false,&quot;nav&quot;:null},&quot;motion&quot;:{&quot;enable&quot;:true,&quot;async&quot;:false,&quot;transition&quot;:{&quot;post_block&quot;:&quot;fadeIn&quot;,&quot;post_header&quot;:&quot;fadeInDown&quot;,&quot;post_body&quot;:&quot;fadeInDown&quot;,&quot;coll_header&quot;:&quot;fadeInLeft&quot;,&quot;sidebar&quot;:&quot;fadeInUp&quot;}},&quot;prism&quot;:false,&quot;i18n&quot;:{&quot;placeholder&quot;:&quot;搜索...&quot;,&quot;empty&quot;:&quot;没有找到任何搜索结果：${query}&quot;,&quot;hits_time&quot;:&quot;找到 ${hits} 个搜索结果（用时 ${time} 毫秒）&quot;,&quot;hits&quot;:&quot;找到 ${hits} 个搜索结果&quot;}}</script>
+<meta name="description" content="Preface生活中，我们应对一系列的身份识别和授权的问题，比如门卫需要检查证件(authentication)，再问你要找谁(authorisation)，比如取钱时的银行卡也是authentication，海关查验护照等等。 在做应用开发时，有时会被权限的问题搞得很烦，不得不花大量的时间处理一系列的 _access denied_，但由于缺乏对权限系统的了解，往往陷入 keep trying">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Understand K8s authentication and authorisation">
+<meta property="og:url" content="https://elitegoblin.github.io/2019/10/05/Understand-K8s-authentication-and-authorisation/index.html">
+<meta property="og:site_name" content="Frank Sun&#39;s Tech Blog">
+<meta property="og:description" content="Preface生活中，我们应对一系列的身份识别和授权的问题，比如门卫需要检查证件(authentication)，再问你要找谁(authorisation)，比如取钱时的银行卡也是authentication，海关查验护照等等。 在做应用开发时，有时会被权限的问题搞得很烦，不得不花大量的时间处理一系列的 _access denied_，但由于缺乏对权限系统的了解，往往陷入 keep trying">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-10-05T05:02:26.000Z">
+<meta property="article:modified_time" content="2021-05-02T06:09:52.273Z">
+<meta property="article:author" content="eliteGoblin">
+<meta property="article:tag" content="kubernetes">
+<meta property="article:tag" content="RBAC">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://elitegoblin.github.io/2019/10/05/Understand-K8s-authentication-and-authorisation/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{&quot;sidebar&quot;:&quot;&quot;,&quot;isHome&quot;:false,&quot;isPost&quot;:true,&quot;lang&quot;:&quot;zh-CN&quot;,&quot;comments&quot;:true,&quot;permalink&quot;:&quot;https:&#x2F;&#x2F;elitegoblin.github.io&#x2F;2019&#x2F;10&#x2F;05&#x2F;Understand-K8s-authentication-and-authorisation&#x2F;&quot;,&quot;path&quot;:&quot;2019&#x2F;10&#x2F;05&#x2F;Understand-K8s-authentication-and-authorisation&#x2F;&quot;,&quot;title&quot;:&quot;Understand K8s authentication and authorisation&quot;}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">&quot;&quot;</script>
+<title>Understand K8s authentication and authorisation | Frank Sun's Tech Blog</title><script src="/js/config.js"></script>
+  
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Frank Sun's Tech Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="th fa-fw"></i>分类</a></li>
+        <li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="tags fa-fw"></i>标签</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="archive fa-fw"></i>归档</a></li>
+        <li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="user fa-fw"></i>关于</a></li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Preface"><span class="nav-number">1.</span> <span class="nav-text">Preface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Authentication-and-Authorisation"><span class="nav-number">2.</span> <span class="nav-text">Authentication and Authorisation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Slide"><span class="nav-number">3.</span> <span class="nav-text">Slide</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">eliteGoblin</p>
+  <div class="site-description" itemprop="description">拒绝复制,经过思考后的总结才属于自己</div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">49</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">49</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/eliteGoblin" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;eliteGoblin" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://elitegoblin.github.io/2019/10/05/Understand-K8s-authentication-and-authorisation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="eliteGoblin">
+      <meta itemprop="description" content="拒绝复制,经过思考后的总结才属于自己">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Frank Sun's Tech Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Understand K8s authentication and authorisation
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2019-10-05 13:02:26" itemprop="dateCreated datePublished" datetime="2019-10-05T13:02:26+08:00">2019-10-05</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-05-02 14:09:52" itemprop="dateModified" datetime="2021-05-02T14:09:52+08:00">2021-05-02</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="Preface"><a href="#Preface" class="headerlink" title="Preface"></a>Preface</h2><p>生活中，我们应对一系列的身份识别和授权的问题，比如门卫需要检查证件(authentication)，再问你要找谁(authorisation)，比如取钱时的银行卡也是authentication，海关查验护照等等。</p>
+<p>在做应用开发时，有时会被权限的问题搞得很烦，不得不花大量的时间处理一系列的 _access denied_，但由于缺乏对权限系统的了解，往往陷入 <em>keep trying until it works</em> 的境地，影响开发效率，解决过程中并没有习得什么系统性知识。  </p>
+<p>不可否认的一点，安全性对商业系统至关重要，作为程序员，根据实际需要，或多或少需要了解一些相关知识和术语，如HTTPS, certificate, CA, X509, OAuth, IAM不等。</p>
+<p>在K8s中也不例外，尤其是当我们自己搭建K8s集群，部署自己服务到K8s时，需要处理一系列权限问题，就需要我们对K8s授权系统有全面了解。</p>
+<p>最近在小组内做了一次关于K8s RBAC的分享，系统的梳理了下K8s内部的authentication和authorisation，希望内容对大家有帮助。</p>
+<span id="more"></span>
+
+<h2 id="Authentication-and-Authorisation"><a href="#Authentication-and-Authorisation" class="headerlink" title="Authentication and Authorisation"></a>Authentication and Authorisation</h2><p>成熟的权限系统都可以划分为： Authentication和Authorisation，分清两者的区别是理解权限系统的关键。</p>
+<p>Authentication: 又称“验证”、“鉴权”, 回答用户是谁的问题。就像我们的身份证或passport，证明我们是谁。  </p>
+<p>Authorisation: 又称授权，回答特定用户能做什么的问题。权限一般由一系列的规则组成，每个规则可以抽象为： user　verb resource 三元组。</p>
+<p>Linux的权限系统是一个典型例子，比如 /etc/hosts文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-rw-r--r--  1 root root     222 Jul 12 14:44 hosts</span><br></pre></td></tr></table></figure>
+
+<p>只允许root user对其 read和write，这里user是root, verb是read, write, resource是/etc/hosts文件。</p>
+<p>K8s内部，也通过一系列的规则定义各个用户的权限。Authorisation是通过RBAC模块完成的。</p>
+<p>根据安全系统的<strong>least priviledge</strong>原则，一般默认不应授予用户任何权限，用户需要的每个权限需要显式指明。</p>
+<h2 id="Slide"><a href="#Slide" class="headerlink" title="Slide"></a>Slide</h2><p>这里Authentication and Authorisation其实仅针对api-server本身，我们通过kubectl, dashboard访问K8s cluster，其实背后是直接向api-server发起HTTPS request，api-server的这里Authentication因此建立在HTTPS之上。</p>
+<p>在<a target="_blank" rel="noopener" href="https://go-talks.appspot.com/github.com/eliteGoblin/Notes/cs/presentations/topics/Kubernetes_RBAC/slide/main.slide#1">此次分享</a>中，我们解决/回答如下问题:  </p>
+<ul>
+<li> 理解K8s的authentication和authorization的big picture，这是我非常推崇的学习方法，掌握了某个领域的big picture(最好画出思维导图)，能分解成为一系列的模块，并知道这些模块分别解决什么问题，如何结合在一些作为整体运行的，相比通过解决问题式的学习方法，更容易让我们获得自信，且面对未知问题知道从何做起。</li>
+<li> RBAC作为K8s的授权模块，理解其关键概念：service account, ole/clusterrole, rolebinding/clusterrolebinding。</li>
+<li> 如何赋予自己的服务以K8s权限：如读取kube-system namespace下的secrets。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/kubernetes/" rel="tag"># kubernetes</a>
+              <a href="/tags/RBAC/" rel="tag"># RBAC</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2019/09/14/which-namespace-does-RBAC-take-effect-in-k8s/" rel="prev" title="which namespace does RBAC take effect in k8s">
+                  <i class="fa fa-chevron-left"></i> which namespace does RBAC take effect in k8s
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2019/10/05/Book-Kubernetes-up-and-running/" rel="next" title="Book: Kubernetes up and running">
+                  Book: Kubernetes up and running <i class="fa fa-chevron-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+<script src="/js/comments.js"></script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">eliteGoblin</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
